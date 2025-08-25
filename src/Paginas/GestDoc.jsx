@@ -9,6 +9,7 @@ const GestDoc = ({ sidebarCollapsed }) => {
   const [urlPreview, setUrlPreview] = useState("");
   const { user } = useContext(AuthContext);
   const userId = user?.id; // el ID del usuario logueado
+  const rol = user?.perfil; // el rol del usuario logueado
 
   
   const fetchArchivos = async (tipo) => {
@@ -293,6 +294,8 @@ const GestDoc = ({ sidebarCollapsed }) => {
           ))}
         </div>
 
+
+
         <div className="overflow-auto max-h-[calc(100vh-200px)]">
           <table className="w-full bg-white rounded-2xl shadow overflow-hidden text-sm">
             <thead className="bg-gray-100">
@@ -303,6 +306,7 @@ const GestDoc = ({ sidebarCollapsed }) => {
                     <th className="p-3">Fecha</th>
                     <th className="p-3">Año</th>
                     <th className="p-3">Mes</th>
+                    {(rol === "admin" || rol === "dev") && <th className="p-3">Usuario</th>}
                     <th className="p-3">Ver</th>
                     <th className="p-3">Descargar</th>
                     <th className="p-3">Eliminar</th>
@@ -313,6 +317,7 @@ const GestDoc = ({ sidebarCollapsed }) => {
                     <th className="p-3">Fecha</th>
                     <th className="p-3">Mes</th>
                     <th className="p-3">Año</th>
+                    {(rol === "admin" || rol === "dev") && <th className="p-3">Usuario</th>}
                     <th className="p-3">Ver</th>
                     <th className="p-3">Descargar</th>
                     <th className="p-3">Eliminar</th>
@@ -322,6 +327,7 @@ const GestDoc = ({ sidebarCollapsed }) => {
                   <>
                     <th className="p-3">Nombre</th>
                     <th className="p-3">Fecha</th>
+                    {(rol === "admin" || rol === "dev") && <th className="p-3">Usuario</th>}
                     <th className="p-3">Ver</th>
                     <th className="p-3">Descargar</th>
                     <th className="p-3">Eliminar</th>
@@ -344,7 +350,7 @@ const GestDoc = ({ sidebarCollapsed }) => {
                     <td className="p-3">{archivo.fecha_carga ? new Date(archivo.fecha_carga).toLocaleString() : "-"}</td>
                     <td className="p-3">{archivo.periodo_anio ?? archivo.anio ?? "-"}</td>
                     <td className="p-3">{archivo.periodo_mes ?? archivo.mes ?? "-"}</td>
-
+                    {(rol === "admin" || rol === "dev") && <td className="p-3">{archivo.usuario_nombre ?? "-"}</td>}
                     <td className="p-3">
                       <button
                         onClick={() => handleVerArchivo(archivo)}
@@ -353,7 +359,6 @@ const GestDoc = ({ sidebarCollapsed }) => {
                         Ver
                       </button>
                     </td>
-
                     <td className="p-3">
                       <a
                         href={archivo.url_web ?? archivo.url_carga ?? archivo.url}
@@ -364,7 +369,6 @@ const GestDoc = ({ sidebarCollapsed }) => {
                         Descargar
                       </a>
                     </td>
-
                     <td className="p-3">
                       <button
                         onClick={() => handleEliminar(archivo.id)}
@@ -384,7 +388,7 @@ const GestDoc = ({ sidebarCollapsed }) => {
                       <td className="p-3">{archivo.fecha_carga ? new Date(archivo.fecha_carga).toLocaleString() : "-"}</td>
                       <td className="p-3">{mes ?? "-"}</td>
                       <td className="p-3">{anio ?? "-"}</td>
-
+                      {(rol === "admin" || rol === "dev") && <td className="p-3">{archivo.usuario_nombre ?? "-"}</td>}
                       <td className="p-3">
                         <button
                           onClick={() => handleVerArchivo(archivo)}
@@ -393,7 +397,6 @@ const GestDoc = ({ sidebarCollapsed }) => {
                           Ver
                         </button>
                       </td>
-
                       <td className="p-3">
                         <a
                           href={archivo.url ?? archivo.url_web ?? archivo.downloadUrl ?? archivo.url_carga}
@@ -404,7 +407,6 @@ const GestDoc = ({ sidebarCollapsed }) => {
                           Descargar
                         </a>
                       </td>
-
                       <td className="p-3">
                         <button
                           onClick={() => handleEliminar(archivo.id)}
@@ -422,7 +424,7 @@ const GestDoc = ({ sidebarCollapsed }) => {
                   <tr key={archivo.id} className="border-t">
                     <td className="p-3">{archivo.nombre ?? archivo.name ?? "Sin nombre"}</td>
                     <td className="p-3">{archivo.fecha_carga ? new Date(archivo.fecha_carga).toLocaleString() : "-"}</td>
-
+                    {(rol === "admin" || rol === "dev") && <td className="p-3">{archivo.usuario_nombre ?? "-"}</td>}
                     <td className="p-3">
                       <button
                         onClick={() => handleVerArchivo(archivo)}
@@ -431,7 +433,6 @@ const GestDoc = ({ sidebarCollapsed }) => {
                         Ver
                       </button>
                     </td>
-
                     <td className="p-3">
                       <a
                         href={archivo.url ?? archivo.url_web ?? archivo.downloadUrl ?? archivo.url_carga}
@@ -442,7 +443,6 @@ const GestDoc = ({ sidebarCollapsed }) => {
                         Descargar
                       </a>
                     </td>
-
                     <td className="p-3">
                       <button
                         onClick={() => handleEliminar(archivo.id)}
@@ -456,8 +456,11 @@ const GestDoc = ({ sidebarCollapsed }) => {
               )}
             </tbody>
           </table>
-        </div>
-      </div>
+        </div>        
+      </div>       
+
+
+      
 
       {/* Vista previa */}
       <div className="flex-1 w-full max-w-[600px] bg-white p-6 flex flex-col min-h-0">
