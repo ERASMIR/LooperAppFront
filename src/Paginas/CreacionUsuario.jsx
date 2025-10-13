@@ -20,7 +20,7 @@ const CreacionUsuario = () => {
   useEffect(() => {
     const fetchEmpresas = async () => {
       try {
-        const res = await fetch("http://localhost:7071/api/getEmpresas");
+        const res = await fetch("https://looper-usuarios.azurewebsites.net/api/getempresas");
         const data = await res.json();
         setEmpresas(data);
       } catch (err) {
@@ -40,7 +40,7 @@ const CreacionUsuario = () => {
     console.log("➡️ Enviando datos al backend:", formData);
 
     try {
-      const res = await fetch("http://localhost:7071/api/crearUsuario", {
+      const res = await fetch("https://looper-usuarios.azurewebsites.net/api/crearusuario", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

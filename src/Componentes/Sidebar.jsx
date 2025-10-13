@@ -49,6 +49,23 @@ const Sidebar = ({ collapsed, toggleCollapse }) => (
         {!collapsed && "Gestión Archivos"}
       </NavLink>
 
+
+      <NavLink
+        to="/dashboard"
+        className={({ isActive }) =>
+          `flex items-center gap-2 px-3 py-2 rounded-md transition-all border 
+          ${isActive
+            ? "bg-primary-500 text-white border-transparent"
+            : "bg-white text-primary-500 border-gray-200"} 
+          hover:bg-gray-100 hover:text-primary-500 hover:border-gray-300`
+        }
+      >
+        <FileText className={`${collapsed ? "w-7 h-7" : "w-4 h-4"} transition-all`} />
+        {!collapsed && "Dashboard"}
+      </NavLink>
+
+
+
       <NavLink
         to="/tutoriales"
         className={({ isActive }) =>

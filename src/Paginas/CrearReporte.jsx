@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FolderUp, SquareArrowUp, ListChecks, FileCog } from "lucide-react";
 import { useContext } from "react";
+import { FaAnglesLeft, FaAnglesRight } from "react-icons/fa6";
 import { AuthContext } from "../context/AuthContext";
 
 const Panel = ({ title, collapsed, setCollapsed, Icon, children }) => {
@@ -140,7 +141,11 @@ const CrearReporte = () => {
       console.log("➡️ Enviando payload:", payload);
 
       try {
-        const response = await fetch("http://localhost:7071/api/subirArchivo", {
+        const response = await fetch(
+          //"http://localhost:7071/api/subirArchivo",
+          `https://looper-gestreport.azurewebsites.net/api/subirarchivo`,
+
+          {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
@@ -167,7 +172,8 @@ const CrearReporte = () => {
           setTimeout(async () => {
             const fetchTipo = async (tipo) => {
               const params = new URLSearchParams({ tipo, empresa: String(empresaId) });
-              const url = `http://localhost:7071/api/listarArchivos?${params.toString()}`;
+              const url = `https://looper-gestdoc.azurewebsites.net/api/listararchivos?${params.toString()}`;
+              //const url = `http://localhost:7071/api/listarArchivos?${params.toString()}`;
               const res = await fetch(url);
               return res.ok ? (await res.json())[tipo] || [] : [];
             };
@@ -177,33 +183,6 @@ const CrearReporte = () => {
             if (tipo === "matriz") { setDestacarMatriz(true); setTimeout(() => setDestacarMatriz(false), 3000); }
             if (tipo === "ventas") { setDestacarVentas(true); setTimeout(() => setDestacarVentas(false), 3000); }
           }, 600);
-
-
-
-
-
-          /* setTimeout(() => {
-            fetch("http://localhost:7071/api/listarArchivos")
-              .then((res) => res.json())
-              .then((data) => {
-                const nuevosMatriz = data.matriz || [];
-                const nuevosVentas = data.ventas || [];
-                setMatrizArchivos(nuevosMatriz);
-                setVentasArchivos(nuevosVentas);
-                if (tipo === "matriz") {
-                  setDestacarMatriz(true);
-                  setTimeout(() => setDestacarMatriz(false), 3000);
-                }
-                if (tipo === "ventas") {
-                  setDestacarVentas(true);
-                  setTimeout(() => setDestacarVentas(false), 3000);
-                }
-              })
-              .catch((err) => console.error("❌ Error al refrescar archivos:", err));
-          }, 1000);
-           */
-
-
 
 
 
@@ -342,8 +321,10 @@ const CrearReporte = () => {
             params.set('empresa', String(empresaId));
           }
 
+          const url = `https://looper-gestdoc.azurewebsites.net/api/listararchivos?${params.toString()}`;
 
-          const url = `http://localhost:7071/api/listarArchivos?${params.toString()}`;
+
+          //const url = `http://localhost:7071/api/listarArchivos?${params.toString()}`;
           console.log(`[GET] listarArchivos -> ${tipo}`, url);
 
           const res = await fetch(url);
@@ -434,7 +415,13 @@ const CrearReporte = () => {
 
         console.log("➡️ Enviando payload:", payload);
 
-        const res = await fetch("http://localhost:7071/api/guardarInforme", {
+        const res = await fetch(
+
+          `https://looper-gestreport.azurewebsites.net/api/guardarinforme`,
+
+          //"http://localhost:7071/api/guardarInforme",
+          
+        {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

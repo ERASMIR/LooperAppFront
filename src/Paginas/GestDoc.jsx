@@ -27,10 +27,11 @@ const GestDoc = ({ sidebarCollapsed }) => {
         params.set('empresa', String(empresaId));
       }
 
-      const url = `http://localhost:7071/api/listarArchivos?${params.toString()}`;
-      //console.log('[GET] listarArchivos ->', url);
-      //console.log('[FETCH DEBUG] URL generada:', url);
-      //console.log('[FETCH DEBUG] tipo:', tipo, '| user.id:', uid);
+      const url = `https://looper-gestdoc.azurewebsites.net/api/listararchivos?${params.toString()}`;
+
+      //const url = `http://localhost:7071/api/listarArchivos?${params.toString()}`;
+      
+
 
       console.log('[GET] listarArchivos ->', url);
       console.log('[FETCH DEBUG] tipo:', tipo, '| user.id:', uid, '| user.empresa:', empresaId);
@@ -78,7 +79,10 @@ const GestDoc = ({ sidebarCollapsed }) => {
     try {
       // 👇 ahora enviamos usuario y empresa
       const res = await fetch(
-        `http://localhost:7071/api/listarReportesRep?usuario=${user.id}&empresa=${user.empresaId}`
+
+        `https://looper-gestdoc.azurewebsites.net/api/listarreportesrep?usuario=${user.id}&empresa=${user.empresaId}`
+
+        //`http://localhost:7071/api/listarReportesRep?usuario=${user.id}&empresa=${user.empresaId}`
       );
 
       const data = await res.json();
@@ -108,7 +112,10 @@ const GestDoc = ({ sidebarCollapsed }) => {
 
     try {
       const res = await fetch(
-        `http://localhost:7071/api/eliminarArchivo?id=${id}&tipo=${tipoArchivo}&usuario=${user.id}&empresa=${user.empresaId}`,
+
+        `https://looper-gestdoc.azurewebsites.net/api/eliminararchivo?id=${id}&tipo=${tipoArchivo}&usuario=${user.id}&empresa=${user.empresaId}`,
+
+        //`http://localhost:7071/api/eliminarArchivo?id=${id}&tipo=${tipoArchivo}&usuario=${user.id}&empresa=${user.empresaId}`,
         { method: "DELETE" }
       );
 

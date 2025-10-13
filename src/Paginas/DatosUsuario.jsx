@@ -26,7 +26,9 @@ const DatosUsuario = ({ usuario }) => {
     const fetchUsuario = async () => {
       try {
         const res = await fetch(
-          `http://localhost:7071/api/getUsuarioById?id=${user.id}`
+          `https://looper-usuarios.azurewebsites.net/api/getusuariobyid?id=${user.id}`
+         
+          //`http://localhost:7071/api/getUsuarioById?id=${user.id}`
         );
         if (!res.ok) throw new Error("Error al obtener usuario");
         const data = await res.json();
@@ -49,7 +51,7 @@ const DatosUsuario = ({ usuario }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`http://localhost:7071/api/updateUsuario`, {
+      const res = await fetch(`https://looper-usuarios.azurewebsites.net/api/updateusuario`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

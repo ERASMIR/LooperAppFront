@@ -4,6 +4,8 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 export const AuthContext = createContext(null);
 
 
+
+
 // Hook para consumir el contexto fácilmente
 export const useAuth = () => {
   return useContext(AuthContext);
@@ -11,7 +13,15 @@ export const useAuth = () => {
 
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // { id, name, email, empresa }
+  //const [user, setUser] = useState(null); // { id, name, email, empresa } USAR ESTA LINEA CUANDO LO SAQUE A PRODUCCION
+    const [user, setUser] = useState({
+    id: "demo",
+    name: "Usuario Demo",
+    email: "emiranda@blockadiaconsultores.com",
+    empresaId: "1",
+    empresa: "Ecológica",
+    perfil: "admin"
+  });
 
   // Cargar usuario desde localStorage si existe
   useEffect(() => {

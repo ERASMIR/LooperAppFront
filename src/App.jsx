@@ -11,6 +11,10 @@ import GestDoc from './Paginas/GestDoc';
 import Tutoriales from './Paginas/Tutoriales';
 import DatosUsuario from './Paginas/DatosUsuario';
 import CreacionUsuario from './Paginas/CreacionUsuario';
+import Dashboard from './Paginas/DashBoard';
+
+import Ecologica from './Paginas/ValidEcologica';
+
 
 // Ruta protegida
 function PrivateRoute({ children, allowedProfiles }) {
@@ -73,6 +77,14 @@ function App() {
         <Routes>
           {/* Página pública */}
           <Route path="/login" element={<LogPage />} />
+           <Route
+            path="/validacion-ecologica"
+            element={
+              <PrivateRoute>
+                <Ecologica />
+              </PrivateRoute>
+            }
+          />
 
           {/* Rutas protegidas */}
           <Route
@@ -123,6 +135,17 @@ function App() {
               </PrivateRoute>
             }
           />
+
+          <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            }
+          />
+
+         
 
           {/* Redirección por defecto */}
           <Route path="*" element={<Navigate to="/inicio" replace />} />

@@ -22,7 +22,12 @@ export default function LogPage() {
 
 
     try {
-      const res = await fetch("http://localhost:7071/api/login", {
+      const res = await fetch(
+        //"http://localhost:7071/api/login",
+
+        `https://looper-usuarios.azurewebsites.net/api/login`,
+        
+        {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -57,21 +62,6 @@ export default function LogPage() {
       navigate("/inicio", { replace: true });
 
 
-      // Guardar token y usuario en localStorage
-      //localStorage.setItem("token", data.token);
-      //localStorage.setItem("usuario", JSON.stringify(data.usuario));
-
-
-
-      // Si usas contexto:
-      // setAuthData({ token: data.token, usuario: data.usuario });
-
-
-
-
-
-      // Redirigir a otra página
-      //window.location.href = "/dashboard";
 
 
     } catch (err) {
