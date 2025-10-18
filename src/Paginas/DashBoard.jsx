@@ -1,494 +1,310 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { Line } from 'react-chartjs-2';
-import { FaAnglesLeft, FaAnglesRight } from "react-icons/fa6";
+import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { Bar } from 'react-chartjs-2';
+import { FaAnglesLeft, FaAnglesRight, FaChartBar, FaTable } from "react-icons/fa6";
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
+  Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend,
 } from 'chart.js';
 import { AuthContext } from "../context/AuthContext";
 
-ChartJS.register(CategoryScale, LinearScale,  PointElement, LineElement, BarElement, Title, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 // ============================================================================
-// COMPONENTE DEL GRÁFICO
+// COMPONENTES REUTILIZABLES
 // ============================================================================
-function Grafico({ datos }) {
-    if (!datos) return <p className="text-center text-gray-500">No hay datos disponibles para mostrar.</p>;
-  
-    const data = {
-      labels: datos.labels,
-      datasets: datos.datasets.map(ds => ({
-        ...ds,
-        borderWidth: 1.5,
-        borderRadius: 5,
-        barThickness: 28,
-      })),
-    };
-  
-    const options = {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'top',
-          labels: {
-            font: { size: 13 },
-          },
+
+const Panel = ({ isOpen, toggle, className, children, collapsedIcon, style }) => (
+  <div
+    style={style}
+    className={`relative flex flex-col transition-all duration-300 ease-in-out bg-white rounded-lg shadow-md ${className || ''}`}
+  >
+    <button
+      onClick={toggle}
+      className="absolute top-2 right-2 bg-white text-primary rounded-md w-7 h-7 flex items-center justify-center shadow-md hover:bg-primary-light transition z-10"
+      title={isOpen ? "Colapsar" : "Expandir"}
+    >
+      {isOpen ? <FaAnglesLeft /> : <FaAnglesRight />}
+    </button>
+    {isOpen ? children : (
+      <div className="flex items-center justify-center h-full text-neutral-400">
+        {collapsedIcon}
+      </div>
+    )}
+  </div>
+);
+
+// ============================================================================
+// PANEL DE TABLA (IZQUIERDO)
+// ============================================================================
+const SumatoriaPanel = ({ tablaDatos, filtroCategoria, setFiltroCategoria }) => (
+  <div className="p-4 pt-10 flex flex-col h-full w-full bg-white rounded-lg shadow-sm">
+    <h2 className="text-lg font-semibold text-neutral-800 mb-3">
+      📋 Sumatoria de materiales
+    </h2>
+    <div className="flex gap-2 mb-4 flex-wrap">
+      {['todas', 'domiciliario', 'no domiciliario'].map((val) => (
+        <button
+          key={val}
+          onClick={() => setFiltroCategoria(val)}
+          className={`px-3 py-1 rounded-md text-sm font-medium border transition ${
+            filtroCategoria === val
+              ? "bg-primary text-white"
+              : "hover:bg-neutral-100"
+          }`}
+        >
+          {val.charAt(0).toUpperCase() + val.slice(1)}
+        </button>
+      ))}
+    </div>
+    <div className="flex-1 border-t border-neutral-200 rounded-md overflow-hidden">
+      <div className="max-h-[calc(100vh-1px)] overflow-y-auto">
+        <table className="w-full border-collapse text-sm">
+          <thead className="bg-neutral-100 text-neutral-700 sticky top-0 z-10">
+            <tr>
+              <th className="p-2 text-left font-semibold">Material</th>
+              <th className="p-2 text-right font-semibold">T. Peligrosos</th>
+              <th className="p-2 text-right font-semibold">T. No Peligrosos</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tablaDatos.map((row) => (
+              <tr key={row.material} className="border-t hover:bg-neutral-50">
+                <td className="p-2">{row.material}</td>
+                <td className="p-2 text-right tabular-nums">
+                  {(row.peligrosos ?? 0).toFixed(3)}
+                </td>
+                <td className="p-2 text-right tabular-nums">
+                  {(row.noPeligrosos ?? 0).toFixed(3)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+);
+
+// ============================================================================
+// PANEL DE GRÁFICO (DERECHO)
+// ============================================================================
+const GraficoPanelContent = ({ datos }) => {
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: "top" },
+      title: { 
+        display: true, 
+        text: "Distribución de materiales", 
+        font: { size: 16 } 
+      },
+    },
+    layout: {
+      padding: { top: 10, right: 20, bottom: 30, left: 10 },
+    },
+    scales: {
+      x: {
+        ticks: {
+          autoSkip: false,
+          maxRotation: 70,
+          minRotation: 70,
+          align: "end",
+          font: { size: 11 },
         },
         title: {
           display: true,
-          text: 'Distribución de materiales por tipo',
-          font: { size: 18 },
+          text: "Materiales",
+          font: { size: 13 },
         },
       },
-      scales: {
-        x: {
-          ticks: {
-            autoSkip: false,
-            maxRotation: 45,
-            minRotation: 0,
-          },
+      y: {
+        beginAtZero: true,
+        title: { 
+          display: true, 
+          text: "Toneladas totales", 
+          font: { size: 13 } 
         },
-        y: {
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: 'Cantidad total',
-          },
+        ticks: {
+          precision: 0,
         },
       },
-    };
-  
-    return (
-      <div className="relative w-full h-[500px] overflow-x-auto">
-        <div style={{ width: Math.max(900, datos.labels.length * 80) }}>
-          <Bar data={data} options={options} />
-        </div>
-      </div>
-    );
-  }
-
-
-
-
-// ============================================================================
-// COMPONENTE DE FILTROS PRINCIPALES
-// ============================================================================
-function Filtros({ filtros, setFiltros, onAplicarFiltros, cargando }) {
-  const MESES = [
-    { value: 1, label: 'Enero' },
-    { value: 2, label: 'Febrero' },
-    { value: 3, label: 'Marzo' },
-    { value: 4, label: 'Abril' },
-    { value: 5, label: 'Mayo' },
-    { value: 6, label: 'Junio' },
-    { value: 7, label: 'Julio' },
-    { value: 8, label: 'Agosto' },
-    { value: 9, label: 'Septiembre' },
-    { value: 10, label: 'Octubre' },
-    { value: 11, label: 'Noviembre' },
-    { value: 12, label: 'Diciembre' },
-  ];
-
-  const ANIOS = [2023, 2024, 2025, 2026];
-
-  const handleChange = (e) => {
-    setFiltros({ ...filtros, [e.target.name]: e.target.value });
+    },
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-md flex flex-wrap items-center gap-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Desde:</label>
-        <div className="flex gap-2">
-          <select name="mesInicio" value={filtros.mesInicio} onChange={handleChange} className="border p-2 rounded-md">
-            {MESES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-          </select>
-          <select name="anioInicio" value={filtros.anioInicio} onChange={handleChange} className="border p-2 rounded-md">
-            {ANIOS.map(a => <option key={a} value={a}>{a}</option>)}
-          </select>
-        </div>
+    <div className="p-4 pt-10 flex flex-col h-full w-full overflow-hidden">
+      <h2 className="text-lg font-semibold text-neutral-800 mb-3">
+        📊 Distribución de materiales
+      </h2>
+      <div className="relative flex-1 w-full h-full min-h-[900px]">
+        {datos ? (
+          <Bar 
+            data={datos} 
+            options={options} 
+            style={{ width: "100%", height: "100%" }} 
+          />
+        ) : (
+          <p>No hay datos para mostrar.</p>
+        )}
       </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Hasta:</label>
-        <div className="flex gap-2">
-          <select name="mesFin" value={filtros.mesFin} onChange={handleChange} className="border p-2 rounded-md">
-            {MESES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-          </select>
-          <select name="anioFin" value={filtros.anioFin} onChange={handleChange} className="border p-2 rounded-md">
-            {ANIOS.map(a => <option key={a} value={a}>{a}</option>)}
-          </select>
-        </div>
-      </div>
-
-      <button
-        onClick={onAplicarFiltros}
-        disabled={cargando}
-        className="bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-blue-300"
-      >
-        {cargando ? 'Cargando...' : 'Consultar'}
-      </button>
     </div>
   );
-}
+};
 
 // ============================================================================
 // COMPONENTE PRINCIPAL DASHBOARD
 // ============================================================================
-function Dashboard() {
-  const { user } = useContext(AuthContext);
 
+function Dashboard() {
+  const { user, token } = useContext(AuthContext);
   const [filtros, setFiltros] = useState({
     mesInicio: new Date().getMonth() + 1,
     anioInicio: new Date().getFullYear(),
     mesFin: new Date().getMonth() + 1,
     anioFin: new Date().getFullYear(),
   });
-
-  //const [datosGrafico, setDatosGrafico] = useState(null);
   const [tablaDatos, setTablaDatos] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
   const [filtroCategoria, setFiltroCategoria] = useState("todas");
 
-  // Función principal de carga de datos
-  const obtenerDatos = async () => {
-    if (!user?.id || !user?.empresaId) {
-      console.warn("⚠️ Falta user.id o user.empresaId");
-      return;
-    }
+  const [isTableOpen, setTableOpen] = useState(true);
+  const [isChartOpen, setChartOpen] = useState(true);
 
-    setCargando(true);
-    setError(null);
+  const meses = [
+    { valor: 1, nombre: "Enero" }, { valor: 2, nombre: "Febrero" },
+    { valor: 3, nombre: "Marzo" }, { valor: 4, nombre: "Abril" },
+    { valor: 5, nombre: "Mayo" }, { valor: 6, nombre: "Junio" },
+    { valor: 7, nombre: "Julio" }, { valor: 8, nombre: "Agosto" },
+    { valor: 9, nombre: "Septiembre" }, { valor: 10, nombre: "Octubre" },
+    { valor: 11, nombre: "Noviembre" }, { valor: 12, nombre: "Diciembre" },
+  ];
 
-    const params = new URLSearchParams({
-      usuarioId: user.id || user.id_usuario || "",
-      empresaId: user.empresaId || user.empresa_id || "",
-      mesInicio: filtros.mesInicio,
-      anioInicio: filtros.anioInicio,
-      mesFin: filtros.mesFin,
-      anioFin: filtros.anioFin,
-    });
+  const anioActual = new Date().getFullYear();
+  const anios = Array.from({ length: 10 }, (_, i) => anioActual - i);
 
-    try {
-      const response = await fetch(`https://looper-gestdoc.azurewebsites.net/api/listarreportemateriales?${params.toString()}`);
-      if (!response.ok) throw new Error(`Error ${response.status}`);
-
-      const data = await response.json();
-
-      // Acumulador de materiales
-      const acumulado = {};
-
-      data.forEach((item) => {
-        const reporte = Array.isArray(item.result_reporte)
-          ? item.result_reporte
-          : JSON.parse(item.result_reporte || "[]");
-
-        reporte.forEach((r) => {
-          const categoria = (r["categoría"] || "").toLowerCase().trim();
-          const material = (r.material || "Desconocido").trim();
-
-          const peligrosos = parseFloat((r["Materiales peligrosos"] || "0").replace(",", "."));
-          const noPeligrosos = parseFloat((r["Materiales no peligrosos"] || "0").replace(",", "."));
-
-          if (!acumulado[material]) {
-            acumulado[material] = {
-              domiciliario: { peligrosos: 0, noPeligrosos: 0 },
-              "no domiciliario": { peligrosos: 0, noPeligrosos: 0 },
-            };
-          }
-
-          if (categoria === "domiciliario" || categoria === "no domiciliario") {
-            acumulado[material][categoria].peligrosos += peligrosos;
-            acumulado[material][categoria].noPeligrosos += noPeligrosos;
-          }
-        });
-      });
-
-      // Aplicar filtro seleccionado
-      const tabla = Object.entries(acumulado).map(([material, valores]) => {
-        let totalPeligrosos = 0;
-        let totalNoPeligrosos = 0;
-
-        if (filtroCategoria === "todas") {
-          totalPeligrosos = valores.domiciliario.peligrosos + valores["no domiciliario"].peligrosos;
-          totalNoPeligrosos = valores.domiciliario.noPeligrosos + valores["no domiciliario"].noPeligrosos;
-        } else {
-          totalPeligrosos = valores[filtroCategoria].peligrosos;
-          totalNoPeligrosos = valores[filtroCategoria].noPeligrosos;
-        }
-
-        return { material, peligrosos: totalPeligrosos, noPeligrosos: totalNoPeligrosos };
-      });
-
-      tabla.sort((a, b) => a.material.localeCompare(b.material));
-      setTablaDatos(tabla);
-
-      // Datos del gráfico
-      const labels = tabla.map((t) => t.material);
-      const datasets = [
-        {
-          label: "Materiales peligrosos",
-          data: tabla.map((t) => t.peligrosos),
-          borderColor: "hsl(0, 70%, 50%)",
-          backgroundColor: "rgba(255, 99, 132, 0.4)",
-        },
-        {
-          label: "Materiales no peligrosos",
-          data: tabla.map((t) => t.noPeligrosos),
-          borderColor: "hsl(210, 70%, 50%)",
-          backgroundColor: "rgba(54, 162, 235, 0.4)",
-        },
-      ];
-
-      setDatosGrafico({ labels, datasets });
-    } catch (err) {
-      console.error(err);
-      setError(err.message);
-    } finally {
-      setCargando(false);
-    }
+  const handleChange = (e) => {
+    setFiltros(prev => ({ ...prev, [e.target.name]: parseInt(e.target.value) }));
   };
 
-  // Efecto: recargar cuando se cambia filtro de categoría
-  useEffect(() => {
-    obtenerDatos();
-  }, [filtroCategoria]);
+  const obtenerDatos = async () => {
+    if (!user?.id || !user?.empresaId || !token) return;
+    setCargando(true);
+    setError(null);
+    const params = new URLSearchParams({ usuarioId: user.id, empresaId: user.empresaId, ...filtros });
+    try {
+      const res = await fetch(`/api-gestdoc/listarreportemateriales?${params.toString()}`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+      const data = await res.json();
+      const acumulado = data.reduce((acc, item) => {
+        const reporte = Array.isArray(item.result_reporte) ? item.result_reporte : JSON.parse(item.result_reporte || "[]");
+        reporte.forEach(r => {
+          const cat = (r["categoría"] || "").toLowerCase().trim();
+          if (cat !== "domiciliario" && cat !== "no domiciliario") return;
+          const material = (r.material || "Desconocido").trim();
+          if (!acc[material]) acc[material] = { dom: { p: 0, np: 0 }, no_dom: { p: 0, np: 0 } };
+          acc[material][cat === "domiciliario" ? "dom" : "no_dom"].p += parseFloat((r["Materiales peligrosos"] || "0").replace(",", "."));
+          acc[material][cat === "domiciliario" ? "dom" : "no_dom"].np += parseFloat((r["Materiales no peligrosos"] || "0").replace(",", "."));
+        });
+        return acc;
+      }, {});
+      const tabla = Object.entries(acumulado).map(([material, v]) => ({
+        material,
+        peligrosos: filtroCategoria === "todas" ? v.dom.p + v.no_dom.p : (filtroCategoria === "domiciliario" ? v.dom.p : v.no_dom.p),
+        noPeligrosos: filtroCategoria === "todas" ? v.dom.np + v.no_dom.np : (filtroCategoria === "domiciliario" ? v.dom.np : v.no_dom.np),
+      }));
+      setTablaDatos(tabla.sort((a, b) => a.material.localeCompare(b.material)));
+    } catch (err) {
+      console.error(err); setError(err.message);
+    } finally { setCargando(false); }
+  };
 
-  
+  useEffect(() => { obtenerDatos(); }, [filtroCategoria, user, token]);
 
-  // Construir datos para el gráfico en base a la tabla filtrada
-const datosGrafico = React.useMemo(() => {
-    if (!tablaDatos || tablaDatos.length === 0) return null;
-  
+  const datosGrafico = useMemo(() => {
+    if (!tablaDatos.length) return null;
     return {
-      labels: tablaDatos.map(row => row.material),
+      labels: tablaDatos.map(d => d.material),
       datasets: [
-        {
-          label: "Total Peligrosos",
-          data: tablaDatos.map(row => row.peligrosos ?? 0),
-          backgroundColor: "rgba(255, 99, 132, 0.5)",
-        },
-        {
-          label: "Total No Peligrosos",
-          data: tablaDatos.map(row => row.noPeligrosos ?? 0),
-          backgroundColor: "rgba(75, 192, 192, 0.5)",
-        },
+        { label: "Peligrosos", data: tablaDatos.map(d => d.peligrosos), backgroundColor: '#f59e0b' }, // warning
+        { label: "No Peligrosos", data: tablaDatos.map(d => d.noPeligrosos), backgroundColor: '#00b86b' }, // primary
       ],
     };
   }, [tablaDatos]);
-  
 
-  return (
-    <div className="app-container">
-    <header className="mb-8">
-      <h1 className="text-3xl font-bold text-gray-800">Visualización de Materiales</h1>
-      <p className="text-gray-600 mt-1">
-        Selecciona un rango de períodos y categoría para consultar los reportes.
-      </p>
-    </header>
+  const tablePanelStyle = {
+    flexGrow: isTableOpen ? 1 : 0,
+    flexShrink: 1,
+    flexBasis: isTableOpen ? '0%' : '4rem',
+    minWidth: isTableOpen ? 0 : '4rem',
+    transition: "flex-basis 0.4s ease, min-width 0.4s ease",
+  };
 
-    <Filtros
-      filtros={filtros}
-      setFiltros={setFiltros}
-      onAplicarFiltros={obtenerDatos}
-      cargando={cargando}
-    />
-
-    <main className="transition-all duration-300 p-6 flex-1">
-      <div className="min-h-screen w-full bg-gray-100 flex flex-col flex-grow">
-        <div className="flex flex-1 gap-4">
-          <SumatoriaPanel
-            tablaDatos={tablaDatos}
-            filtroCategoria={filtroCategoria}
-            setFiltroCategoria={setFiltroCategoria}
-          />
-          <GraficoPanel datos={datosGrafico} />
-        </div>
-      </div>
-    </main>
-  </div>
-  );
-}
-
-// ================== PANEL IZQUIERDO ===================
-function SumatoriaPanel({ tablaDatos, filtroCategoria, setFiltroCategoria }) {
-  const [abierto, setAbierto] = useState(true);
-
-  const toggleFiltro = (tipo) => {
-    setFiltroCategoria(tipo);
+  const chartPanelStyle = {
+    flexGrow: isChartOpen ? 3 : 0, 
+    flexShrink: 1,
+    flexBasis: isChartOpen ? '0%' : '4rem',
+    minWidth: isChartOpen ? 0 : '4rem',
+    transition: "flex-basis 0.4s ease, min-width 0.4s ease",
   };
 
   return (
-    <div
-      className={`relative flex flex-col transition-all duration-500 ease-in-out bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden
-        ${abierto ? "flex-[1_1_50%]" : "flex-[0_0_3.5rem]"}`}
-    >
-      {/* Botón de colapsar */}
-      <button
-        onClick={() => setAbierto(!abierto)}
-        className="absolute top-2 right-2 bg-white text-[#00E676] rounded-md w-7 h-7 flex items-center justify-center shadow-md hover:bg-[#00E676] hover:text-white transition"
-        title={abierto ? "Colapsar panel izquierdo" : "Expandir panel izquierdo"}
-      >
-        {abierto ? <FaAnglesLeft className="w-4 h-4" /> : <FaAnglesRight className="w-4 h-4" />}
-      </button>
+    <div className="flex flex-col h-full w-full min-w-full flex-grow p-4">
+      <header className="mb-6">
+        <h1 className="text-2xl font-bold text-neutral-800">Visualización de Materiales</h1>
+        <p className="text-neutral-600">Selecciona filtros para consultar los reportes.</p>
+      </header>
 
-      {abierto && (
-        <div className="pt-6 flex-1 overflow-auto">
-          <h2 className="text-lg font-semibold text-gray-800 mb-3">📋 Sumatoria de materiales</h2>
-
-          {/* Botones de filtro */}
-          <div className="flex gap-2 mb-4">
-            {[
-              { label: "Todo", value: "todas" },
-              { label: "Domiciliario", value: "domiciliario" },
-              { label: "No Domiciliario", value: "no domiciliario" },
-            ].map((btn) => (
-              <button
-                key={btn.value}
-                onClick={() => toggleFiltro(btn.value)}
-                className={`px-3 py-1 rounded-md text-sm font-medium border transition
-                  ${
-                    filtroCategoria === btn.value
-                      ? "bg-blue-600 text-white border-blue-600"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-                  }`}
-              >
-                {btn.label}
-              </button>
-            ))}
+      <div className="bg-white p-4 rounded-lg shadow-sm mb-4 flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="font-medium text-neutral-700">Período:</span>
+          <div className="flex items-center gap-2">
+            <select name="mesInicio" value={filtros.mesInicio} onChange={handleChange} className="border rounded-md px-2 py-1 text-sm">
+              {meses.map(mes => <option key={mes.valor} value={mes.valor}>{mes.nombre}</option>)}
+            </select>
+            <select name="anioInicio" value={filtros.anioInicio} onChange={handleChange} className="border rounded-md px-2 py-1 text-sm">
+              {anios.map(anio => <option key={anio} value={anio}>{anio}</option>)}
+            </select>
           </div>
-
-          {/* Tabla */}
-          <div className="overflow-y-auto max-h-[60vh]">
-            <table className="w-full border border-gray-200 rounded-md text-sm">
-              <thead className="bg-gray-100 text-gray-700 sticky top-0">
-                <tr>
-                  <th className="p-2 text-left">Material</th>
-                  <th className="p-2 text-right">Total Peligrosos</th>
-                  <th className="p-2 text-right">Total No Peligrosos</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tablaDatos.map((row) => (
-                  <tr key={row.material} className="border-t border-gray-200">
-                    <td className="p-2">{row.material}</td>
-                    <td className="p-2 text-right">{(row.peligrosos ?? 0).toFixed(3)}</td>
-                    <td className="p-2 text-right">{(row.noPeligrosos ?? 0).toFixed(3)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <span className="text-neutral-500">-</span>
+          <div className="flex items-center gap-2">
+            <select name="mesFin" value={filtros.mesFin} onChange={handleChange} className="border rounded-md px-2 py-1 text-sm">
+              {meses.map(mes => <option key={mes.valor} value={mes.valor}>{mes.nombre}</option>)}
+            </select>
+            <select name="anioFin" value={filtros.anioFin} onChange={handleChange} className="border rounded-md px-2 py-1 text-sm">
+              {anios.map(anio => <option key={anio} value={anio}>{anio}</option>)}
+            </select>
           </div>
         </div>
-      )}
+        <button
+          onClick={obtenerDatos}
+          disabled={cargando}
+          className="bg-primary text-white font-semibold px-4 py-2 rounded-md hover:bg-primary/90 transition disabled:bg-neutral-400"
+        >
+          {cargando ? "Consultando..." : "Consultar registros"}
+        </button>
+      </div>
+
+      <main className="flex flex-1 w-full min-w-full gap-4 overflow-hidden items-stretch">
+        <Panel
+          isOpen={isTableOpen}
+          toggle={() => setTableOpen(o => !o)}
+          style={tablePanelStyle}
+          collapsedIcon={<FaTable className="w-7 h-7" />}
+        >
+          <SumatoriaPanel {...{ tablaDatos, filtroCategoria, setFiltroCategoria }} />
+        </Panel>
+        <Panel
+          isOpen={isChartOpen}
+          toggle={() => setChartOpen(o => !o)}
+          style={chartPanelStyle}
+          collapsedIcon={<FaChartBar className="w-7 h-7" />}
+        >
+          <GraficoPanelContent datos={datosGrafico} />
+        </Panel>
+      </main>
     </div>
   );
 }
 
-
-
-// ================== PANEL DERECHO ===================GraficoPanel
-function GraficoPanel({ datos }) {
-    if (!datos || !datos.labels?.length)
-      return (
-        <div className="flex items-center justify-center w-full h-[550px] bg-gray-50 rounded-md">
-          <p className="text-center text-gray-500">No hay datos disponibles para mostrar.</p>
-        </div>
-      );
-  
-    // calcular rango dinámico del eje Y
-    const allValues = datos.datasets.flatMap((ds) => ds.data);
-    const minY = 0; // siempre desde cero
-    const maxY = Math.max(...allValues);
-    const padding = maxY * 0.1 || 1; // 10% extra arriba
-  
-    const data = {
-      labels: datos.labels,
-      datasets: datos.datasets.map((ds) => ({
-        ...ds,
-        borderWidth: 1.5,
-        borderRadius: 6,
-        barPercentage: 0.7,
-        categoryPercentage: 0.6,
-      })),
-    };
-  
-    const options = {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: "top",
-          labels: {
-            font: { size: 13 },
-          },
-        },
-        title: {
-          display: true,
-          text: "Distribución de materiales por tipo",
-          font: { size: 18 },
-        },
-      },
-      layout: {
-        padding: 20,
-      },
-      scales: {
-        x: {
-          ticks: {
-            autoSkip: false,
-            maxRotation: 40,
-            minRotation: 40,
-            font: { size: 12 },
-            callback: function (value, index) {
-              const label = this.getLabelForValue(value);
-              // cortar etiquetas largas (para evitar que se salgan del canvas)
-              return label.length > 25 ? label.slice(0, 25) + "…" : label;
-            },
-          },
-          grid: {
-            display: false,
-          },
-        },
-        y: {
-          beginAtZero: true,
-          min: minY,
-          max: maxY + padding,
-          title: {
-            display: true,
-            text: "Cantidad total",
-            font: { size: 13 },
-          },
-          ticks: {
-            stepSize: Math.max((maxY + padding) / 5, 1),
-            font: { size: 12 },
-          },
-          grid: {
-            color: "rgba(0,0,0,0.1)",
-          },
-        },
-      },
-    };
-  
-    // ancho dinámico: 120px por etiqueta (para que no se amontonen)
-    const widthPx = Math.max(1000, datos.labels.length * 120);
-  
-    return (
-      <div className="relative w-full h-[550px] bg-gray-50 rounded-lg shadow-inner overflow-x-auto overflow-y-hidden p-4">
-        <div style={{ width: `${widthPx}px`, height: "100%" }}>
-          <Bar data={data} options={options} />
-        </div>
-      </div>
-    );
-  }
-  
 export default Dashboard;

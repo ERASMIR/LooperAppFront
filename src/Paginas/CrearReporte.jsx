@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { FolderUp, SquareArrowUp, ListChecks, FileCog } from "lucide-react";
-import { useContext } from "react";
-import { FaAnglesLeft, FaAnglesRight } from "react-icons/fa6";
+import { FaFileDownload } from "react-icons/fa";
+import { TbBrowserMaximize } from "react-icons/tb";
 import { AuthContext } from "../context/AuthContext";
 
 const Panel = ({ title, collapsed, setCollapsed, Icon, children }) => {
@@ -10,52 +10,39 @@ const Panel = ({ title, collapsed, setCollapsed, Icon, children }) => {
       className={`relative bg-white p-8 rounded-xl shadow transition-all duration-500 basis-0 overflow-hidden
         ${collapsed ? "grow-0 w-16 p-2" : "grow-[3] p-8"}`}
     >
-      {/* ---------- Expanded: top-right small collapse button ---------- */}
       {!collapsed && (
         <button
           onClick={() => setCollapsed(true)}
-          className="absolute top-2 right-2 text-green-600 hover:text-green-800 text-xs bg-white border border-green-500 rounded-full w-6 h-6 flex items-center justify-center shadow z-10"
+          className="absolute top-2 right-2 text-primary hover:text-green-800 text-xs bg-white border border-primary rounded-full w-6 h-6 flex items-center justify-center shadow z-10"
           title="Colapsar"
-          aria-label={`Colapsar ${title}`}
         >
           <span className="text-sm">{"<<"}</span>
         </button>
       )}
-
-      {/* ---------- Collapsed controls: centrados horizontalmente pero arriba ---------- */}
       {collapsed && (
-        <div
-          className="absolute inset-0 flex items-start justify-center z-10 pointer-events-none"
-          aria-hidden={false}
-        >
-          {/* contenedor interior con pointer-events-auto para permitir clicks */}
+        <div className="absolute inset-0 flex items-start justify-center z-10 pointer-events-none">
           <div className="flex flex-col items-center justify-start gap-2 pointer-events-auto mt-2">
             <button
               onClick={() => setCollapsed(false)}
-              className="text-green-600 hover:text-green-800 text-xs bg-white border border-green-500 rounded-full w-6 h-6 flex items-center justify-center shadow"
+              className="text-primary hover:text-green-800 text-xs bg-white border border-primary rounded-full w-6 h-6 flex items-center justify-center shadow"
               title="Expandir"
-              aria-label={`Expandir ${title}`}
             >
               <span className="text-sm">{">>"}</span>
             </button>
-
             <div className="p-1 rounded-full bg-white shadow">
-              <Icon className="w-6 h-6 text-green-600" />
+              <Icon className="w-6 h-6 text-primary" />
             </div>
           </div>
         </div>
       )}
-
-      {/* ---------- Contenido del panel (solo si está expandido) ---------- */}
       {!collapsed && (
         <div>
           <div className="flex items-center gap-2 mb-4">
-            <div className="bg-green-100 text-green-600 p-2 rounded-full shadow">
+            <div className="bg-primary-light text-primary p-2 rounded-full shadow">
               <Icon className="w-6 h-6" />
             </div>
             <h2 className="text-xl font-bold text-gray-800">{title}</h2>
           </div>
-
           {children}
         </div>
       )}
@@ -63,9 +50,7 @@ const Panel = ({ title, collapsed, setCollapsed, Icon, children }) => {
   );
 };
 
-
 const CrearReporte = () => {
-  // --- tus estados (sin modificar)
   const [matrizArchivos, setMatrizArchivos] = useState([]);
   const [ventasArchivos, setVentasArchivos] = useState([]);
   const [mes, setMes] = useState("");
@@ -80,603 +65,534 @@ const CrearReporte = () => {
   const [archivoVentas, setArchivoVentas] = useState(null);
   const [destacarMatriz, setDestacarMatriz] = useState(false);
   const [destacarVentas, setDestacarVentas] = useState(false);
-
-  // controles de colapso/expansion - 3 paneles
   const [mostrarCargar, setMostrarCargar] = useState(true);
   const [mostrarSeleccion, setMostrarSeleccion] = useState(true);
   const [mostrarProcesar, setMostrarProcesar] = useState(true);
-
   const [mostrarTablaJSON, setMostrarTablaJSON] = useState(false);
   const [resultadoJSON, setResultadoJSON] = useState([]);
   const [filtroCategorias, setFiltroCategorias] = useState([]);
   const [filtroMateriales, setFiltroMateriales] = useState([]);
-  const { user } = useContext(AuthContext); // ✅ ahora sí existe
-
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('');
+  const [materialSeleccionado, setMaterialSeleccionado] = useState('');
+  const { user } = useContext(AuthContext);
   const empresaId = user?.empresaId;
   const userId = user?.id;
-  //const { user } = useAuth(); // Extraemos el usuario del contexto
-  //const userId = user?.id; // el ID del usuario logueado
+  const [procesando, setProcesando] = useState(false);
 
+  const fetchTipo = async (tipo) => {
+    const params = new URLSearchParams({ tipo });
+    if (userId) params.set('usuario', String(userId));
+    if (empresaId) params.set('empresa', String(empresaId));
+    const url = `/api-gestdoc/listararchivos?${params.toString()}`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    let list = Array.isArray(data?.[tipo]) ? data[tipo] : (Array.isArray(data?.archivos) ? data.archivos : (Object.values(data || {}).find(Array.isArray) || []));
+    return list;
+  };
 
-
-
-
-
-  // ------------------ tus funciones existentes (sin cambios lógicos) ------------------
-  const subirArchivoAzure = async (archivo, tipo) => {
-    if (!archivo || !archivo.file) {
-      alert("Archivo no seleccionado");
+  //useEffect que construye filtros a partir de resultadoJSON
+  useEffect(() => {
+    if (!Array.isArray(resultadoJSON) || resultadoJSON.length === 0) {
+      setFiltroCategorias([]);
+      setFiltroMateriales([]);
       return;
     }
 
-    //const empresaId = user?.empresa_id;     // 👈 tomar empresa del contexto
-    const empresaId = user?.empresaId;
-    const userId = user?.id;                // 👈 tomar user id real
+    // helper para extraer valor con varias posibles keys
+    const get = (obj, keys) => {
+      for (const k of keys) {
+        if (obj[k] !== undefined && obj[k] !== null) return obj[k];
+      }
+      return undefined;
+    };
+
+    const cats = new Set();
+    const mats = new Set();
+
+    resultadoJSON.forEach(item => {
+      const cat = get(item, ['categoría', 'categoria', 'categoria_producto', 'categoriaProducto', 'categoria_producto']);
+      const mat = get(item, ['material', 'material_reciclado', 'nombre_material', 'material_nombre', 'materialName']);
+      if (cat) cats.add(String(cat));
+      if (mat) mats.add(String(mat));
+    });
+
+    setFiltroCategorias([...cats]);
+    setFiltroMateriales([...mats]);
+  }, [resultadoJSON]);
 
 
+  useEffect(() => {
+    const obtenerArchivosSubidos = async () => {
+      if (!empresaId) return;
+      const [matriz, ventas] = await Promise.all([fetchTipo("matriz"), fetchTipo("ventas")]);
+      setMatrizArchivos(matriz);
+      setVentasArchivos(ventas);
+    };
+    obtenerArchivosSubidos();
+  }, [user, empresaId]);
+  
+  const subirArchivoAzure = async (archivo, tipo) => {
+    if (!archivo || !archivo.file) return alert("Archivo no seleccionado");
     const reader = new FileReader();
     reader.onload = async () => {
       const base64 = reader.result.split(",")[1];
-
-      //const nombreSinExtension = archivo.nombre.split(".").slice(0, -1).join(".");
-      //const extension = "." + archivo.extension;
-
-      const fileName = archivo.file.name;  
-      const extension = "." + fileName.split(".").pop();  
-      const nombreSinExtension = fileName.substring(0, fileName.lastIndexOf(".")) || fileName;
-
-
+      const fileName = archivo.file.name;
       const payload = {
         tipo,
-        //id_usuario: "123",
         id_usuario: String(userId),
-        //id_usuario: String(user.id),         // 👈 el ID del usuario logueado
-        //empresa_id: Number(user.empresa),    // 👈 ID de la empresa
-        empresa_id: Number(empresaId), 
-        nombre_archivo: nombreSinExtension,
-        extension,
+        empresa_id: Number(empresaId),
+        nombre_archivo: fileName.substring(0, fileName.lastIndexOf(".")) || fileName,
+        extension: "." + fileName.split(".").pop(),
         base64,
       };
-
-      console.log("➡️ Enviando payload:", payload);
-
       try {
-        const response = await fetch(
-          //"http://localhost:7071/api/subirArchivo",
-          `https://looper-gestreport.azurewebsites.net/api/subirarchivo`,
-
-          {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        const res = await fetch('/api-gestreport/subirarchivo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
-
-
         });
-
-       
-        let result;
-        try {
-          result = await response.json();
-        } catch {
-          result = {};
-        }
-
-
-        if (response.ok) {
+        const result = await res.json();
+        if (res.ok) {
           alert("Archivo subido correctamente");
-        
-        console.log("📥 Respuesta del backend:", result);
-
-
-          // 🔁 refresco correcto por empresa y por tipo
-          setTimeout(async () => {
-            const fetchTipo = async (tipo) => {
-              const params = new URLSearchParams({ tipo, empresa: String(empresaId) });
-              const url = `https://looper-gestdoc.azurewebsites.net/api/listararchivos?${params.toString()}`;
-              //const url = `http://localhost:7071/api/listarArchivos?${params.toString()}`;
-              const res = await fetch(url);
-              return res.ok ? (await res.json())[tipo] || [] : [];
-            };
-            const [nuevosMatriz, nuevosVentas] = await Promise.all([fetchTipo("matriz"), fetchTipo("ventas")]);
-            setMatrizArchivos(nuevosMatriz);
-            setVentasArchivos(nuevosVentas);
-            if (tipo === "matriz") { setDestacarMatriz(true); setTimeout(() => setDestacarMatriz(false), 3000); }
-            if (tipo === "ventas") { setDestacarVentas(true); setTimeout(() => setDestacarVentas(false), 3000); }
-          }, 600);
-
-
-
+          const [matriz, ventas] = await Promise.all([fetchTipo("matriz"), fetchTipo("ventas")]);
+          setMatrizArchivos(matriz);
+          setVentasArchivos(ventas);
+          if (tipo === "matriz") setDestacarMatriz(true);
+          if (tipo === "ventas") setDestacarVentas(true);
+          setTimeout(() => { setDestacarMatriz(false); setDestacarVentas(false); }, 3000);
         } else {
-          console.error("❌ Error del backend:", result);
-          alert("Error al subir el archivo: " + (result.error || "desconocido"));
+          alert("Error al subir: " + (result.error || "desconocido"));
         }
-      } catch (error) {
-        console.error("❌ Error al conectar con Azure:", error);
+      } catch (err) {
         alert("Error de red al subir archivo");
       }
     };
     reader.readAsDataURL(archivo.file);
   };
-
-
-
-
-  const handleFileUpload = (e, tipo) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const id = crypto.randomUUID();
-    const nombre = file.name;
-    const extension = nombre.split(".").pop();
-    const nuevoArchivo = {
-      id,
-      nombre,
-      extension,
-      file,
-      fecha: new Date().toISOString(),
-    };
-    if (tipo === "matriz") {
-      setArchivoMatriz(nuevoArchivo);
-      setMatrizArchivos((prev) => [...prev, { id, nombre }]);
-      setDestacarMatriz(true);
-      setTimeout(() => setDestacarMatriz(false), 3000);
-    }
-    if (tipo === "ventas") {
-      const periodo = mes && anio ? `${mes}/${anio}` : "";
-      setArchivoVentas({ ...nuevoArchivo, periodo });
-      setVentasArchivos((prev) => [...prev, { id, nombre, periodo }]);
-      setDestacarVentas(true);
-      setTimeout(() => setDestacarVentas(false), 3000);
-    }
-  };
-
-
-
-
-
-  const handleProcesar = async () => {
-    if (!archivoMatrizSeleccionado || !archivoVentasSeleccionado) {
-      alert("Debes seleccionar ambos archivos para procesar.");
-      return;
-    }
-    const matObj = matrizArchivos.find((item) => item.nombre === archivoMatrizSeleccionado);
-    const venObj = ventasArchivos.find((item) => item.nombre === archivoVentasSeleccionado);
-    if (!matObj?.url || !venObj?.url) {
-      alert("No se encontraron las URLs de los archivos seleccionados.");
-      return;
-    }
-    try {
-      const res = await fetch("https://looperapp.azurewebsites.net/api/looperprocesfiles3", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          matrixUrl: matObj.url,
-          salesUrl: venObj.url,
-          //id_usuario: "123",
-          id_usuario: String(user?.id),
-          empresa_id: Number(empresaId),
-        }),
-      });
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error("❌ Error de Azure: " + errText);
-      }
-      const result = await res.json();
-      if (!result.fileUrl || !Array.isArray(result.fileUrl) || result.fileUrl.length < 2) {
-        throw new Error("❌ Respuesta inválida del servidor.");
-      }
-      const [webViewLink, webContentLink] = result.fileUrl;
-      setReporteLinks({
-        ver: webViewLink,
-        descargar: webContentLink,
-      });
-      const ls = result.logSummary || {};
-      let resumen =
-        `📊 Total líneas: ${ls["Total de líneas procesadas"] || 0}\n` +
-        `✅ Correctas: ${ls["Líneas procesadas correctamente"] || 0}\n` +
-        `⚠️ No encontradas: ${(ls["Registros no encontrados en Matriz de Materiales"]?.length ?? 0)}\n`;
-      const noEncontrados = ls["Registros no encontrados en Matriz de Materiales"] || [];
-      if (noEncontrados.length) {
-        resumen += "🔍 Líneas no encontradas:\n";
-        noEncontrados.forEach((item) => {
-          resumen += `• Línea ${item["Línea del Registro de Ventas"] || item.line}: SKU "${item.SKU}", Unidad "${item.Unidad || item.unit}"\n`;
-        });
-      }
-      setResultadoProcesamiento(resumen);
-      setResultadoJSON(result.sumadores || []);
-      setMostrarOpciones(true);
-      setMostrarResultadoFinal(false);
-    } catch (err) {
-      console.error("❌ Error de red al procesar archivos:", err);
-      alert("Error de red al procesar archivos");
-    }
-  };
-
-
-
-
-  useEffect(() => {
-    const obtenerArchivosSubidos = async () => {
-      try {
-        //const empresaId = user?.empresa_id;
-        const empresaId = user?.empresaId;
-        if (!empresaId) return;
-
-
-        //const uid = user?.id;
-        //if (!uid) return;
-
-        const fetchTipo = async (tipo) => {
-          //const params = new URLSearchParams({ usuario: String(uid), tipo });
-          //const params = new URLSearchParams({ empresa: String(empresaId), tipo });
-
-          const params = new URLSearchParams({ tipo });
-
-          const uid = user?.id;
-          if (uid && uid !== 'undefined' && uid !== 'null') {
-            params.set('usuario', String(uid));
-          }
-
-          const empresaId = user?.empresaId;
-          if (empresaId && empresaId !== 'undefined' && empresaId !== 'null') {
-            params.set('empresa', String(empresaId));
-          }
-
-          const url = `https://looper-gestdoc.azurewebsites.net/api/listararchivos?${params.toString()}`;
-
-
-          //const url = `http://localhost:7071/api/listarArchivos?${params.toString()}`;
-          console.log(`[GET] listarArchivos -> ${tipo}`, url);
-
-          const res = await fetch(url);
-          if (!res.ok) {
-            console.error(`[❌] Error HTTP en ${tipo}:`, res.status);
-            return [];
-          }
-
-          //return res.ok ? (await res.json())[tipo] || [] : [];
-
-          const data = await res.json();
-          console.log(`[FETCH DEBUG] Respuesta cruda (${tipo}):`, data);
-
-          let list = [];
-          if (Array.isArray(data?.[tipo])) {
-            list = data[tipo];
-          } else if (Array.isArray(data?.archivos)) {
-            list = data.archivos;
-          } else {
-            const firstArray = Object.values(data || {}).find((v) => Array.isArray(v));
-            list = firstArray || [];
-          }
-
-          console.log(`[✔] ${tipo} normalizado ->`, list);
-          return list;
-
-
-        };
-
-
-        const [matriz, ventas] = await Promise.all([
-          fetchTipo("matriz"),
-          fetchTipo("ventas")
-        ]);
-
-        console.log("📦 Matriz recibidas:", matriz);
-        console.log("📦 Ventas recibidas:", ventas);
-
-        setMatrizArchivos(matriz);
-        setVentasArchivos(ventas);
-
-      } catch (err) {
-        console.error("❌ Error de red:", err);
-      }
-    };
-
-
-    obtenerArchivosSubidos();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]); //[user?.empresa, matrizArchivos.length, ventasArchivos.length]);
-  //}, [user, matrizArchivos.length, ventasArchivos.length]); // <-- Dependencia para refrescar si cambia usuario
-
-
-
-
-
-
-
-
   
+  // 📂 Manejo de carga de archivos
+const handleFileUpload = (e, tipo) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const nuevoArchivo = { id: crypto.randomUUID(), nombre: file.name, file };
+
+  if (tipo === "matriz") {
+    setArchivoMatriz(nuevoArchivo);
+  } else if (tipo === "ventas") {
+    setArchivoVentas(nuevoArchivo);
+  } else {
+    console.warn(`Tipo de archivo no reconocido: ${tipo}`);
+  }
+};
+
+// ⚙️ Manejo de procesamiento de archivos
+const handleProcesar = async () => {
+  if (!archivoMatrizSeleccionado || !archivoVentasSeleccionado) {
+    alert("⚠️ Debes seleccionar ambos archivos para procesar.");
+    return;
+  }
+
+  const matObj = matrizArchivos.find((item) => item.nombre === archivoMatrizSeleccionado);
+  const venObj = ventasArchivos.find((item) => item.nombre === archivoVentasSeleccionado);
+
+  if (!matObj?.url || !venObj?.url) {
+    alert("🚫 No se encontraron las URLs. Asegúrate de que los archivos están correctamente subidos.");
+    return;
+  }
+
+
+
+  try {
+    const payload = {
+      matrixUrl: matObj.url,
+      salesUrl: venObj.url,
+      id_usuario: String(userId),
+      empresa_id: Number(empresaId),
+    };
+
+    setProcesando(true);
+
+    const res = await fetch("/api-procesar/looperprocesfiles3", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Error HTTP ${res.status}: ${errorText}`);
+    }
+
+    const result = await res.json();
+
+    // ✅ Manejo flexible de fileUrl (puede ser objeto o array)
+    let webViewLink = "", webContentLink = "";
+
+    if (Array.isArray(result.fileUrl)) {
+      [webViewLink, webContentLink] = result.fileUrl;
+    } else if (result.fileUrl) {
+      webViewLink = result.fileUrl.webViewLink || "";
+      webContentLink = result.fileUrl.webContentLink || "";
+    }
+
+    setReporteLinks({ ver: webViewLink, descargar: webContentLink });
+
+    // 🧮 Procesar resumen de log
+    const ls = result.logSummary || {};
+    const total = ls["Total de líneas procesadas"] || 0;
+    const correctas = ls["Líneas procesadas correctamente"] || 0;
+    const noEncontradasArr = ls["Registros no encontrados en Matriz de Materiales"] || [];
+    const noEncontradasCount = noEncontradasArr.length;
+
+    let resumen = `📊 Total líneas: ${total}\n` +
+                  `✅ Correctas: ${correctas}\n` +
+                  `⚠️ No encontradas: ${noEncontradasCount}\n`;
+
+    if (noEncontradasCount > 0) {
+      resumen += "🔍 Líneas no encontradas:\n";
+      noEncontradasArr.forEach((item) => {
+        resumen += `• Línea ${item["Línea del Registro de Ventas"] || item.line || "?"} → SKU "${item.SKU}" | Unidad "${item.Unidad || item.unit || "-"}"\n`;
+      });
+    }
+
+    setResultadoProcesamiento(resumen);
+    setResultadoJSON(result.sumadores || []);
+    setMostrarOpciones(true);
+    setMostrarResultadoFinal(false);
+
+  } catch (err) {
+    console.error("❌ Error al procesar archivos:", err);
+    alert(`Error al procesar: ${err.message}`);
+  }
+  setProcesando(false);
+
+  };
 
   const handleGuardarReporte = async () => {
-    if (!mes || !anio) {
-        alert("Selecciona mes y año para guardar el reporte.");
-        return;
-    }
-
+    if (!mes || !anio) return alert("Selecciona mes y año para guardar.");
     try {
-      const empresaId = user?.empresaId;
-      const userId = user?.id;
-
-
       const payload = {
-        //id_usuario: "123", // Ajustar dinámicamente si tenés login
         id_usuario: String(userId),
-        empresa_id: Number(empresaId), 
-        //id_usuario: String(user?.id),
-        //empresa_id: Number(user?.empresa),
-        nombre_archivo: reporteLinks.nombre_archivo || "reporte.xlsx",
+        empresa_id: Number(empresaId),
+        nombre_archivo: "reporte.xlsx",
         extension: "xlsx",
         url_web: reporteLinks.ver,
         url_carga: reporteLinks.descargar,
         periodo_mes: parseInt(mes),
         periodo_anio: parseInt(anio),
         result_procesamiento: resultadoProcesamiento,
-        result_reporte: resultadoJSON
-        };
-
-        console.log("➡️ Enviando payload:", payload);
-
-        const res = await fetch(
-
-          `https://looper-gestreport.azurewebsites.net/api/guardarinforme`,
-
-          //"http://localhost:7071/api/guardarInforme",
-          
-        {
+        result_reporte: resultadoJSON,
+      };
+      const res = await fetch(`/api-gestreport/guardarinforme`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-        });
-
-        if (!res.ok) {
-        const text = await res.text();
-        throw new Error("Error al guardar: " + text);
-        }
-
-        alert("✅ Reporte guardado correctamente.");
+      });
+      if (!res.ok) throw new Error(await res.text());
+      alert("✅ Reporte guardado correctamente.");
     } catch (err) {
-        console.error("❌ Error al guardar reporte:", err);
-        alert("No se pudo guardar el reporte.");
+      console.error("Error al guardar reporte:", err);
+      alert(`No se pudo guardar: ${err.message}`);
     }
-    };
+  };
 
+  const filteredData = resultadoJSON.filter(item => {
+    return (categoriaSeleccionada ? item.categoria_producto === categoriaSeleccionada : true) &&
+           (materialSeleccionado ? item.material_reciclado === materialSeleccionado : true);
+  });
 
-
-  // ------------------ RENDER principal ------------------
   return (
-    <div className="flex w-full gap-6 p-10 min-h-[calc(100vh-5rem)]">
-      {/* Panel 1: Cargar Archivos */}
-      <Panel
-        title="Cargar Archivos"
-        collapsed={!mostrarCargar ? true : false}
-        setCollapsed={(v) => setMostrarCargar(!v)}
-        Icon={SquareArrowUp}
-      >
-        <div className="space-y-4">
-          <label className="block font-semibold">Matriz de Materiales:</label>
-          <input
-            type="file"
-            onChange={(e) => handleFileUpload(e, "matriz")}
-            className="w-full p-4 bg-gray-100 rounded-xl"
-          />
-          <button
-            className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
-            onClick={() => subirArchivoAzure(archivoMatriz, "matriz")}
-          >
-            Subir
-          </button>
-        </div>
+    <div className="p-10 w-full">
+      <header className="mb-6">
+        <h1 className="text-2xl font-bold text-neutral-800">Crear Reporte</h1>
+        <p className="text-neutral-600">Carga, selecciona y procesa tus archivos para generar un nuevo reporte.</p>
+      </header>
 
-        <div className="space-y-4 mt-6">
-          <label className="block font-semibold">Registro de Ventas:</label>
-          <input
-            type="file"
-            onChange={(e) => handleFileUpload(e, "ventas")}
-            className="w-full p-4 bg-gray-100 rounded-xl"
-          />
-          <div className="flex gap-4">
-            <select onChange={(e) => setMes(e.target.value)} value={mes} className="w-full bg-gray-100 p-4 rounded-xl">
-              <option value="">Seleccionar mes</option>
-              <option value="01">Enero</option>
-              <option value="02">Febrero</option>
-              <option value="03">Marzo</option>
-              <option value="04">Abril</option>
-              <option value="05">Mayo</option>
-              <option value="06">Junio</option>
-              <option value="07">Julio</option>
-              <option value="08">Agosto</option>
-              <option value="09">Septiembre</option>
-              <option value="10">Octubre</option>
-              <option value="11">Noviembre</option>
-              <option value="12">Diciembre</option>
-            </select>
-            <select onChange={(e) => setAnio(e.target.value)} value={anio} className="w-full bg-gray-100 p-4 rounded-xl">
-              <option value="2024">2024</option>
-              <option value="2025">2025</option>
-              <option value="2026">2026</option>
-            </select>
-          </div>
-          <button
-            className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
-            onClick={() => {
-              if (!mes || !anio) return alert("Selecciona el mes y el año.");
-              if (!archivoVentas) return alert("Selecciona un archivo de ventas.");
-              subirArchivoAzure({ ...archivoVentas, periodo: `${mes}/${anio}` }, "ventas");
-            }}
-          >
-            Subir
-          </button>
-        </div>
-      </Panel>
-
-      {/* Panel 2: Seleccionar Archivos para Procesar */}
-      <Panel
-        title="Seleccionar Archivos para Procesar"
-        collapsed={!mostrarSeleccion ? true : false}
-        setCollapsed={(v) => setMostrarSeleccion(!v)}
-        Icon={ListChecks}
-      >
-        <div className="space-y-4">
-          <label className="block font-semibold">Matriz de Materiales:</label>
-          <select
-            onChange={(e) => setArchivoMatrizSeleccionado(e.target.value)}
-            value={archivoMatrizSeleccionado}
-            className={`w-full bg-gray-100 p-4 rounded-xl transition-all duration-300 ${destacarMatriz ? "border-2 border-green-500 shadow-md" : ""}`}
-          >
-            <option value="">Selecciona un archivo</option>
-            {matrizArchivos.map((file) => (
-              <option key={file.id} value={file.nombre}>
-                {file.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="space-y-4 mt-4">
-          <label className="block font-semibold">Registro de Ventas:</label>
-          <select
-            onChange={(e) => setArchivoVentasSeleccionado(e.target.value)}
-            value={archivoVentasSeleccionado}
-            className={`w-full bg-gray-100 p-4 rounded-xl transition-all duration-300 ${destacarVentas ? "border-2 border-green-500 shadow-md" : ""}`}
-          >
-            <option value="">Selecciona un archivo</option>
-            {ventasArchivos.map((file) => {
-              console.log("🔍 Archivo ventas:", file);
-              return (
-                <option key={file.id || file.nombre} value={file.nombre}>
-                  {file.nombre}{file.periodo ? ` - ${file.periodo}` : ""}
-                </option>
-              );
-            })}
-          </select>
-        </div>
-      </Panel>
-
-      {/* Panel 3: Procesar Archivos */}
-      <Panel
-        title="Procesar Archivos"
-        collapsed={!mostrarProcesar ? true : false}
-        setCollapsed={(v) => setMostrarProcesar(!v)}
-        Icon={FileCog}
-      >
-        <div>
-          <button
-            onClick={handleProcesar}
-            className="w-full bg-white text-gray-700 py-3 rounded-xl hover:bg-green-50 transition-colors"
-          >
-            Procesar Archivos
-          </button>
-
-          {mostrarOpciones && (
-            <>
-              <h3 className="text-lg font-semibold mt-6">Reporte Generado:</h3>
-              <div className="flex items-center gap-2 mt-2">
-                <button onClick={() => window.open(reporteLinks.descargar, "_blank")} className="p-2 rounded-full hover:bg-green-100" title="Descargar Reporte" style={{ border: "2px solid #00b86b" }}>
-                  <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M12 12v9m0-9l-3 3m3-3l3 3m0-12H6a2 2 0 00-2 2v1" />
-                  </svg>
-                </button>
-                <button onClick={() => window.open(reporteLinks.ver, "_blank")} className="p-2 rounded-full hover:bg-green-100" title="Ver en nueva pestaña" style={{ border: "2px solid #00b86b" }}>
-                  <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M14 3h7v7m0 0L10 21m11-11H10m4-4L3 21" />
-                  </svg>
-                </button>
-                <button onClick={() => setMostrarTablaJSON(!mostrarTablaJSON)} className="ml-2 bg-white text-gray-700 py-3 px-4 rounded-xl hover:bg-green-50 transition-colors" style={{ border: "2px solid #00b86b" }}>
-                  Ver Reporte
-                </button>
-              </div>
-
-              <div className="flex items-center gap-4 my-4">
-                <label className="font-semibold text-sm">Período del Reporte:</label>
-                <select onChange={(e) => setMes(e.target.value)} value={mes} className="bg-gray-100 p-2 rounded-xl">
-                  <option value="">Mes</option>
-                  <option value="01">Enero</option>
-                  <option value="02">Febrero</option>
-                  <option value="03">Marzo</option>
-                  <option value="04">Abril</option>
-                  <option value="05">Mayo</option>
-                  <option value="06">Junio</option>
-                  <option value="07">Julio</option>
-                  <option value="08">Agosto</option>
-                  <option value="09">Septiembre</option>
-                  <option value="10">Octubre</option>
-                  <option value="11">Noviembre</option>
-                  <option value="12">Diciembre</option>
-                </select>
-                <select onChange={(e) => setAnio(e.target.value)} value={anio} className="bg-gray-100 p-2 rounded-xl">
-                  <option value="">Año</option>
-                  <option value="2024">2024</option>
-                  <option value="2025">2025</option>
-                </select>
-
-                <button onClick={handleGuardarReporte} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                  Guardar Reporte
-                </button>
-              </div>
-
-              <button onClick={() => setMostrarResultadoFinal(true)} className="w-full bg-white text-gray-700 py-3 rounded-xl hover:bg-green-50 transition-colors mt-2" style={{ border: "2px solid #00b86b" }}>
-                Mostrar Resultados del Procesamiento
-              </button>
-            </>
-          )}
-
-          {mostrarResultadoFinal && (
-            <textarea readOnly className="w-full h-40 bg-gray-100 p-4 rounded-xl mt-4" value={resultadoProcesamiento} />
-          )}
-
-          {mostrarTablaJSON && (
-            <div className="mt-6">
-              <div className="space-y-4 mb-4">
-                <div className="w-64">
-                  <label className="font-semibold">Filtrar Categorías:</label>
-                  <select multiple className="block w-full bg-white border border-gray-300 rounded p-2" value={filtroCategorias} onChange={(e) => setFiltroCategorias([...e.target.selectedOptions].map((o) => o.value))}>
-                    {Array.from(new Set(resultadoJSON.map((r) => r["categoría"]))).map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="font-semibold">Filtrar Materiales:</label>
-                  <select multiple className="block w-full bg-white border border-gray-300 rounded p-2 min-w-[200px]" style={{ width: "100%" }} value={filtroMateriales} onChange={(e) => setFiltroMateriales([...e.target.selectedOptions].map((o) => o.value))}>
-                    {Array.from(new Set(resultadoJSON.map((r) => r["material"]))).map((mat) => (
-                      <option key={mat} value={mat}>
-                        {mat}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="min-w-full bg-white border border-gray-200 rounded-xl shadow">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="px-4 py-2 text-left">Categoría</th>
-                      <th className="px-4 py-2 text-left">Material</th>
-                      <th className="px-4 py-2 text-left">Materiales peligrosos</th>
-                      <th className="px-4 py-2 text-left">Materiales no peligrosos</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {resultadoJSON
-                      .filter((row) => (filtroCategorias.length === 0 || filtroCategorias.includes(row["categoría"])) && (filtroMateriales.length === 0 || filtroMateriales.includes(row["material"])))
-                      .map((row, i) => (
-                        <tr key={i} className="border-t">
-                          <td className="px-4 py-2">{row["categoría"]}</td>
-                          <td className="px-4 py-2">{row["material"]}</td>
-                          <td className="px-4 py-2">{row["Materiales peligrosos"]}</td>
-                          <td className="px-4 py-2">{row["Materiales no peligrosos"]}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
+      <div className="flex w-full gap-6 min-h-[calc(100vh-10rem)]">
+        <Panel title="1. Cargar Archivos" collapsed={!mostrarCargar} setCollapsed={(v) => setMostrarCargar(!v)} Icon={SquareArrowUp}>
+            <div className="space-y-4">
+                <label className="block font-semibold text-sm">Matriz de Materiales:</label>
+                <input type="file" onChange={(e) => handleFileUpload(e, "matriz")} className="w-full text-sm p-3 bg-gray-100 rounded-lg" />
+                <button disabled={!archivoMatriz} className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-green-700 disabled:bg-gray-400" onClick={() => subirArchivoAzure(archivoMatriz, "matriz")}>Subir Matriz</button>
             </div>
-          )}
-        </div>
-      </Panel>
+            <div className="space-y-4 mt-6">
+                <label className="block font-semibold text-sm">Registro de Ventas:</label>
+                <input type="file" onChange={(e) => handleFileUpload(e, "ventas")} className="w-full text-sm p-3 bg-gray-100 rounded-lg" />
+                <div className="flex gap-4">
+                    <select onChange={(e) => setMes(e.target.value)} value={mes} className="w-full bg-gray-100 p-3 text-sm rounded-lg">
+                        <option value="">Mes</option>
+                        {[...Array(12).keys()].map(i => <option key={i+1} value={String(i+1).padStart(2, '0')}>{new Date(0, i).toLocaleString('es', { month: 'long' })}</option>)}
+                    </select>
+                    <select onChange={(e) => setAnio(e.target.value)} value={anio} className="w-full bg-gray-100 p-3 text-sm rounded-lg">
+                        <option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option>
+                    </select>
+                </div>
+                <button disabled={!archivoVentas || !mes || !anio} className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-green-700 disabled:bg-gray-400" onClick={() => subirArchivoAzure(archivoVentas, "ventas")}>Subir Ventas</button>
+            </div>
+        </Panel>
+
+        <Panel title="2. Seleccionar Archivos" collapsed={!mostrarSeleccion} setCollapsed={(v) => setMostrarSeleccion(!v)} Icon={ListChecks}>
+            <div className="space-y-4">
+                <label className="block font-semibold text-sm">Matriz de Materiales:</label>
+                <select onChange={(e) => setArchivoMatrizSeleccionado(e.target.value)} value={archivoMatrizSeleccionado} className={`w-full bg-gray-100 p-3 text-sm rounded-lg transition-all ${destacarMatriz ? "border-2 border-primary" : ""}`}>
+                    <option value="">Selecciona un archivo</option>
+                    {matrizArchivos.map((file) => <option key={file.id || file.nombre} value={file.nombre}>{file.nombre}</option>)}
+                </select>
+            </div>
+            <div className="space-y-4 mt-4">
+                <label className="block font-semibold text-sm">Registro de Ventas:</label>
+                <select onChange={(e) => setArchivoVentasSeleccionado(e.target.value)} value={archivoVentasSeleccionado} className={`w-full bg-gray-100 p-3 text-sm rounded-lg transition-all ${destacarVentas ? "border-2 border-primary" : ""}`}>
+                    <option value="">Selecciona un archivo</option>
+                    {ventasArchivos.map((file) => <option key={file.id || file.nombre} value={file.nombre}>{file.nombre}{file.periodo ? ` - ${file.periodo}` : ""}</option>)}
+                </select>
+            </div>
+        </Panel>
+
+        <Panel title="3. Procesar y Guardar" collapsed={!mostrarProcesar} setCollapsed={(v) => setMostrarProcesar(!v)} Icon={FileCog}>
+            <div>
+            <div className="flex flex-col items-center gap-4">
+              <button
+                onClick={handleProcesar}
+                disabled={!archivoMatrizSeleccionado || !archivoVentasSeleccionado || procesando}
+                className={`bg-primary text-white py-3 px-6 rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-all ${
+                  procesando ? "opacity-70 cursor-wait" : ""
+                }`}
+                style={{ maxWidth: "280px" }}
+              >
+                {procesando ? "Procesando archivos..." : "Procesar Archivos"}
+              </button>
+
+              {procesando && (
+                <div className="w-full max-w-sm bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                  <div className="bg-primary h-2.5 rounded-full animate-[progress_2s_ease-in-out_infinite]" />
+                  <style>
+                    {`@keyframes progress {
+                      0% { width: 10%; opacity: 0.5; }
+                      50% { width: 90%; opacity: 1; }
+                      100% { width: 10%; opacity: 0.5; }
+                    }`}
+                  </style>
+                </div>
+              )}
+            </div>
+
+
+              {mostrarOpciones && (
+                <>
+                  <h3 className="text-lg font-semibold mt-6">Reporte Generado:</h3>
+                  <div className="flex items-center gap-2 mt-2">
+                    <button onClick={() => window.open(reporteLinks.descargar, "_blank")} className="p-2 rounded-full hover:bg-green-100 border-2 border-primary" title="Descargar Reporte">
+                      <FaFileDownload className="w-5 h-5 text-gray-700" />
+                    </button>
+                    <button onClick={() => window.open(reporteLinks.ver, "_blank")} className="p-2 rounded-full hover:bg-green-100 border-2 border-primary" title="Ver en nueva pestaña">
+                      <TbBrowserMaximize className="w-5 h-5 text-gray-700" />
+                    </button>
+                    <button onClick={() => setMostrarTablaJSON(!mostrarTablaJSON)} className="ml-2 bg-primary text-white py-2 px-4 rounded-lg hover:bg-green-700">
+                      Ver Reporte
+                    </button>
+                  </div>
+
+
+                  <div className="flex flex-wrap items-center gap-4 my-4">
+                    <label className="font-semibold text-sm">Período:</label>
+                    <select
+                      onChange={(e) => setMes(e.target.value)}
+                      value={mes}
+                      className="bg-gray-100 p-2 rounded-xl text-sm"
+                    >
+                      <option value="">Mes</option>
+                      {[...Array(12).keys()].map((i) => (
+                        <option key={i + 1} value={String(i + 1).padStart(2, "0")}>
+                          {new Date(0, i).toLocaleString("es", { month: "long" })}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      onChange={(e) => setAnio(e.target.value)}
+                      value={anio}
+                      className="bg-gray-100 p-2 rounded-xl text-sm"
+                    >
+                      <option value="">Año</option>
+                      <option value="2024">2024</option>
+                      <option value="2025">2025</option>
+                    </select>
+
+                    {/* 🔽 Alineado al mismo nivel que los selects */}
+                    <button
+                      onClick={handleGuardarReporte}
+                      className="bg-primary text-white px-5 py-2 rounded-lg hover:bg-green-700 text-sm"
+                    >
+                      Guardar Reporte
+                    </button>
+                  </div>
+
+
+
+                  <div className="mt-2">
+                    <button
+                      onClick={() => setMostrarResultadoFinal(!mostrarResultadoFinal)}
+                      className="bg-white text-primary border border-primary px-5 py-2 rounded-lg hover:bg-green-50 transition-colors"
+                      style={{ maxWidth: "250px" }}
+                    >
+                      {mostrarResultadoFinal ? "Ocultar resultados del procesamiento" : "Mostrar resumen del procesamiento"}
+                    </button>
+
+                    {mostrarResultadoFinal && (
+                      <textarea
+                        readOnly
+                        className="w-full h-40 bg-gray-100 p-4 rounded-xl mt-4 text-xs"
+                        value={resultadoProcesamiento}
+                      />
+                    )}
+                  </div>
+
+                  
+
+                </>
+              )}
+
+
+              {mostrarTablaJSON && (
+                <div className="mt-6">
+                  {/* 🔘 Selector de categoría principal */}
+                  <div className="flex gap-4 mb-6">
+                    {["domiciliario", "no domiciliario"].map((tipo) => (
+                      <button
+                        key={tipo}
+                        onClick={() => setFiltroCategorias([tipo])}
+                        className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-colors ${
+                          filtroCategorias.includes(tipo)
+                            ? "bg-primary text-white border-primary"
+                            : "bg-white text-gray-700 border-gray-300 hover:bg-neutral-100"
+                        }`}
+                      >
+                        {tipo === "domiciliario" ? "🏠 Domiciliario" : "🏢 No domiciliario"}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* 🔍 Filtro de materiales */}
+                  <div className="space-y-4 mb-4">
+                    <div>
+                      <label className="font-semibold">Filtrar Materiales:</label>
+                      <select
+                        multiple
+                        className="block w-full bg-white border border-gray-300 rounded p-2 text-sm min-w-[200px]"
+                        value={filtroMateriales}
+                        onChange={(e) =>
+                          setFiltroMateriales([...e.target.selectedOptions].map((o) => o.value))
+                        }
+                      >
+                        {Array.from(
+                          new Set(resultadoJSON.map((r) => r["material"] ?? r["material_reciclado"]))
+                        ).map((mat) => (
+                          <option key={mat} value={mat}>
+                            {mat}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* 📊 Tabla de resultados */}
+                  <div className="overflow-x-auto mt-6">
+                    <table className="min-w-full bg-white border border-gray-200 rounded-xl shadow text-sm">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="px-4 py-2 text-left">Categoría</th>
+                          <th className="px-4 py-2 text-left">Material</th>
+                          <th className="px-4 py-2 text-right">T. Peligrosos</th>
+                          <th className="px-4 py-2 text-right">T. No Peligrosos</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {resultadoJSON
+                          .filter((row) => {
+                            const categoriaVal =
+                              row["categoría"] ??
+                              row["categoria"] ??
+                              row["categoria_producto"] ??
+                              row["categoriaProducto"];
+                            const materialVal =
+                              row["material"] ??
+                              row["material_reciclado"] ??
+                              row["nombre_material"] ??
+                              row["materialNombre"];
+                            const catOk =
+                              filtroCategorias.length === 0 ||
+                              (categoriaVal && filtroCategorias.includes(String(categoriaVal)));
+                            const matOk =
+                              filtroMateriales.length === 0 ||
+                              (materialVal && filtroMateriales.includes(String(materialVal)));
+                            return catOk && matOk;
+                          })
+                          .map((row, i) => {
+                            const get = (keys) => {
+                              for (const k of keys) {
+                                if (row[k] !== undefined && row[k] !== null) return row[k];
+                              }
+                              return undefined;
+                            };
+
+                            const categoria =
+                              get(["categoría", "categoria", "categoria_producto", "categoriaProducto"]) ||
+                              "—";
+                            const material =
+                              get(["material", "material_reciclado", "nombre_material", "materialNombre"]) ||
+                              "—";
+
+                            const parseNum = (val) => {
+                              if (val === undefined || val === null || val === "") return 0;
+                              if (typeof val === "number") return val;
+                              const s = String(val).trim().replace(/\s/g, "").replace(",", ".");
+                              const n = Number(s);
+                              return Number.isFinite(n) ? n : 0;
+                            };
+
+                            const peligrosos = parseNum(
+                              get([
+                                "Materiales peligrosos",
+                                "materiales_peligrosos",
+                                "total_peligrosos",
+                                "peligrosos",
+                                "t_peligrosos",
+                              ])
+                            );
+                            const noPeligrosos = parseNum(
+                              get([
+                                "Materiales no peligrosos",
+                                "materiales_no_peligrosos",
+                                "total_no_peligrosos",
+                                "no_peligrosos",
+                                "t_no_peligrosos",
+                              ])
+                            );
+
+                            return (
+                              <tr key={`${i}-${material}`} className="border-t hover:bg-neutral-50">
+                                <td className="px-4 py-2">{categoria}</td>
+                                <td className="px-4 py-2">{material}</td>
+                                <td className="px-4 py-2 text-right tabular-nums">
+                                  {peligrosos.toFixed(6)}
+                                </td>
+                                <td className="px-4 py-2 text-right tabular-nums">
+                                  {noPeligrosos.toFixed(6)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+
+            </div>
+        </Panel>
+      </div>
     </div>
   );
 };

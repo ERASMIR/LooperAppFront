@@ -278,7 +278,10 @@ const GestDoc = ({ sidebarCollapsed }) => {
     <div className="flex w-screen h-screen min-h-screen min-w-0">
       {/* Panel izquierdo */}
       <div className="flex-1 w-full max-w-[760px] bg-white px-10 py-6 overflow-auto min-h-0">
-        <h1 className="text-3xl font-bold mb-6">Gestión Documental</h1>
+        <header className="mb-6">
+          <h1 className="text-2xl font-bold text-neutral-800">Gestión Documental</h1>
+          <p className="text-neutral-600">Explora, visualiza y gestiona tus archivos.</p>
+        </header>
 
         <div className="flex gap-4 mb-6">
           {["matriz", "ventas", "reportes"].map((tipo) => (
@@ -293,7 +296,7 @@ const GestDoc = ({ sidebarCollapsed }) => {
                 }
               }}
               className={`px-4 py-2 text-sm rounded-xl transition ${
-                tipoArchivo === tipo ? "bg-primary-500 text-white" : "bg-gray-200 hover:bg-gray-300"
+                tipoArchivo === tipo ? "bg-primary text-white" : "bg-gray-200 hover:bg-gray-300"
               }`}
             >
               {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
@@ -361,7 +364,7 @@ const GestDoc = ({ sidebarCollapsed }) => {
                     <td className="p-3">
                       <button
                         onClick={() => handleVerArchivo(archivo)}
-                        className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                        className="px-3 py-1 bg-primary text-white rounded hover:bg-primary-light"
                       >
                         Ver
                       </button>
@@ -371,7 +374,7 @@ const GestDoc = ({ sidebarCollapsed }) => {
                         href={archivo.url_web ?? archivo.url_carga ?? archivo.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                        className="px-3 py-1 bg-primary text-white rounded hover:bg-primary-light"
                       >
                         Descargar
                       </a>
@@ -399,7 +402,7 @@ const GestDoc = ({ sidebarCollapsed }) => {
                       <td className="p-3">
                         <button
                           onClick={() => handleVerArchivo(archivo)}
-                          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                          className="px-3 py-1 bg-primary text-white rounded hover:bg-primary-light"
                         >
                           Ver
                         </button>
@@ -409,7 +412,7 @@ const GestDoc = ({ sidebarCollapsed }) => {
                           href={archivo.url ?? archivo.url_web ?? archivo.downloadUrl ?? archivo.url_carga}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                          className="px-3 py-1 bg-primary text-white rounded hover:bg-primary-light"
                         >
                           Descargar
                         </a>
@@ -435,7 +438,7 @@ const GestDoc = ({ sidebarCollapsed }) => {
                     <td className="p-3">
                       <button
                         onClick={() => handleVerArchivo(archivo)}
-                        className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                        className="px-3 py-1 bg-primary text-white rounded hover:bg-primary-light"
                       >
                         Ver
                       </button>
@@ -445,7 +448,7 @@ const GestDoc = ({ sidebarCollapsed }) => {
                         href={archivo.url ?? archivo.url_web ?? archivo.downloadUrl ?? archivo.url_carga}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                        className="px-3 py-1 bg-primary text-white rounded hover:bg-primary-light"
                       >
                         Descargar
                       </a>

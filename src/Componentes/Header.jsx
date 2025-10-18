@@ -2,10 +2,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext"; // 👈 importar el hook
+import { useAuth } from "../context/AuthContext";
 
 const Header = () => {
-  const { user, logout } = useAuth(); // 👈 obtener user del contexto
+  const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef();
   const navigate = useNavigate();
@@ -22,10 +22,10 @@ const Header = () => {
     };
   }, []);
 
-  if (!user) return null; // ⬅️ ya no usamos localStorage, solo contexto
+  if (!user) return null;
 
   const handleLogout = () => {
-    logout(); // usa la función del contexto
+    logout();
     navigate("/login");
   };
 
@@ -35,14 +35,14 @@ const Header = () => {
         <img
           src="/Logo-LoopeR3.png"
           alt="Looper Logo"
-          className="h-16 w-auto max-h-18 object-contain"
+          className="h-16 w-auto object-contain"
         />
       </div>
 
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 text-lg text-gray-700 hover:text-primary-500 transition"
+          className="flex items-center gap-2 text-lg text-gray-700 hover:text-primary transition"
         >
           {user.name}
           <ChevronDown size={18} />
@@ -63,6 +63,15 @@ const Header = () => {
                 className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
               >
                 Crear Nuevo Usuario
+              </Link>
+            )}
+
+            {(user.perfil === "dev") && (
+              <Link
+                to="/crear-empresa"
+                className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
+              >
+                Crear Nueva Empresa
               </Link>
             )}
 

@@ -1,65 +1,57 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-
 export const AuthContext = createContext(null);
-
-
-
 
 // Hook para consumir el contexto fácilmente
 export const useAuth = () => {
   return useContext(AuthContext);
 };
 
-
 export const AuthProvider = ({ children }) => {
-  //const [user, setUser] = useState(null); // { id, name, email, empresa } USAR ESTA LINEA CUANDO LO SAQUE A PRODUCCION
-    const [user, setUser] = useState({
-    id: "demo",
-    name: "Usuario Demo",
-    email: "emiranda@blockadiaconsultores.com",
-    empresaId: "1",
-    empresa: "Ecológica",
-    perfil: "admin"
-  });
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
 
-  // Cargar usuario desde localStorage si existe
+  // Cargar usuario y token desde localStorage al iniciar la app
   useEffect(() => {
     const storedUser = localStorage.getItem("usuario");
-    console.log("📦 Cargando desde localStorage:", storedUser);
-    if (storedUser) {
+    const storedToken = localStorage.getItem("token");
+    
+    if (storedUser && storedToken) {
       setUser(JSON.parse(storedUser));
+      setToken(storedToken);
     }
   }, []);
 
-  // Función para iniciar sesión
-  const login = (userData) => {
-    // Merge con los campos actuales para evitar problemas si falta alguno
+  // Función para iniciar sesión (ahora recibe user y token)
+  const login = (userData, token) => {
     const fullUserData = {
       id: userData.id || "",
-      name: [userData.nombre, userData.apellido].filter(Boolean).join(" "), // 👈 nombre completo
+      name: [userData.nombre, userData.apellido].filter(Boolean).join(" "),
       email: userData.email || "",
-      empresaId: userData.empresaId || "",  // 👈 aquí ya se llena bien
-      //empresa: userData.empresa || "",
-      //empresaId: userData.empresa_id || userData.empresa?.id || "", // 👈 siempre un ID real
-      empresa: userData.empresa?.nombre || userData.empresa || "", // 👈 nombre de la empresa
-      perfil: userData.perfil || "", // <-- agrega el perfil
+      empresaId: userData.empresaId || "",
+      empresa: userData.empresa?.nombre || userData.empresa || "",
+      perfil: userData.perfil || "",
     };
 
     console.log("🟢 Guardando usuario en AuthContext:", fullUserData);
+    console.log("🔑 Guardando token:", token);
 
     setUser(fullUserData);
+    setToken(token);
     localStorage.setItem("usuario", JSON.stringify(fullUserData));
+    localStorage.setItem("token", token);
   };
 
   // Función para cerrar sesión
   const logout = () => {
     setUser(null);
+    setToken(null);
     localStorage.removeItem("usuario");
+    localStorage.removeItem("token");
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, token, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

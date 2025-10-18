@@ -7,31 +7,23 @@ export default function LogPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const { login } = useAuth(); // 👈 usar login del contexto
+  const { login } = useAuth(); // Usar login del contexto
   const navigate = useNavigate();
-
-  // Si usas contexto:
-  // const { setAuthData } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    console.log("🚀 Enviando login con:", { email, password });
-
-
     try {
       const res = await fetch(
-        //"http://localhost:7071/api/login",
-
         `https://looper-usuarios.azurewebsites.net/api/login`,
-        
         {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        }
+      );
 
       const data = await res.json();
 
@@ -39,30 +31,12 @@ export default function LogPage() {
         throw new Error(data.error || "Error de autenticación");
       }
 
-      console.log("🔵 Usuario recibido del backend:", data.usuario);
+      // ¡Esta es la corrección importante!
+      // Llamar a login con los dos argumentos: usuario y token.
+      login(data.usuario, data.token);
 
-
-
-      // ✅ Usar el login del contexto
-      login({
-        id: data.usuario.id,
-        nombre: data.usuario.nombre,
-        apellido: data.usuario.apellido,   // 👈 agreguemos apellido también
-        email: data.usuario.email,
-        empresa: data.usuario.empresa,        
-        empresaId: data.usuario.empresaId, // 👈 siempre un ID real
-        perfil: data.usuario.perfil,
-      });
-
-      // ✅ Guardar token también
-      localStorage.setItem("token", data.token);
-
-      // ✅ Redirigir con react-router (mejor que window.location.href)
-      //window.location.href = "/inicio"; // o usa navigate("/inicio")
+      // Redirigir a la página de inicio
       navigate("/inicio", { replace: true });
-
-
-
 
     } catch (err) {
       setError(err.message);
@@ -70,11 +44,6 @@ export default function LogPage() {
       setLoading(false);
     }
   };
-
-
-
-
-
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
