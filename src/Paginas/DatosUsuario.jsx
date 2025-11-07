@@ -63,9 +63,11 @@ const DatosUsuario = () => {
     if (changePassword) {
       dataToUpdate.password = password;
     }
-
+    http://localhost:7071/api/updateUsuario
     try {
-      const res = await fetch(`https://looper-usuarios.azurewebsites.net/api/updateusuario`, {
+      const res = await fetch(
+        //`https://looper-usuarios.azurewebsites.net/api/updateusuario`
+        'http://localhost:7071/api/updateUsuario', {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToUpdate),
