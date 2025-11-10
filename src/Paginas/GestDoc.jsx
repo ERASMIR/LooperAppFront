@@ -29,9 +29,6 @@ const GestDoc = ({ sidebarCollapsed }) => {
 
       const url = `https://looper-gestdoc.azurewebsites.net/api/listararchivos?${params.toString()}`;
 
-      //const url = `http://localhost:7071/api/listarArchivos?${params.toString()}`;
-      
-
 
       console.log('[GET] listarArchivos ->', url);
       console.log('[FETCH DEBUG] tipo:', tipo, '| user.id:', uid, '| user.empresa:', empresaId);
@@ -82,7 +79,6 @@ const GestDoc = ({ sidebarCollapsed }) => {
 
         `https://looper-gestdoc.azurewebsites.net/api/listarreportesrep?usuario=${user.id}&empresa=${user.empresaId}`
 
-        //`http://localhost:7071/api/listarReportesRep?usuario=${user.id}&empresa=${user.empresaId}`
       );
 
       const data = await res.json();
@@ -115,7 +111,7 @@ const GestDoc = ({ sidebarCollapsed }) => {
 
         `https://looper-gestdoc.azurewebsites.net/api/eliminararchivo?id=${id}&tipo=${tipoArchivo}&usuario=${user.id}&empresa=${user.empresaId}`,
 
-        //`http://localhost:7071/api/eliminarArchivo?id=${id}&tipo=${tipoArchivo}&usuario=${user.id}&empresa=${user.empresaId}`,
+        
         { method: "DELETE" }
       );
 

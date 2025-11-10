@@ -83,7 +83,7 @@ const CrearReporte = () => {
     const params = new URLSearchParams({ tipo });
     if (userId) params.set('usuario', String(userId));
     if (empresaId) params.set('empresa', String(empresaId));
-    const url = `/api-gestdoc/listararchivos?${params.toString()}`;
+    const url = `https://looper-gestdoc.azurewebsites.net/api/listararchivos?${params.toString()}`;
     const res = await fetch(url);
     if (!res.ok) return [];
     const data = await res.json();
@@ -147,7 +147,7 @@ const CrearReporte = () => {
         base64,
       };
       try {
-        const res = await fetch('/api-gestreport/subirarchivo', {
+        const res = await fetch('https://looper-gestreport.azurewebsites.net/api/subirarchivo', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -214,7 +214,7 @@ const handleProcesar = async () => {
 
     setProcesando(true);
 
-    const res = await fetch("/api-procesar/looperprocesfiles3", {
+    const res = await fetch("https://looperapp.azurewebsites.net/api/looperprocesfiles3", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -285,7 +285,7 @@ const handleProcesar = async () => {
         result_procesamiento: resultadoProcesamiento,
         result_reporte: resultadoJSON,
       };
-      const res = await fetch(`/api-gestreport/guardarinforme`, {
+      const res = await fetch(`https://looper-gestreport.azurewebsites.net/api/guardarinforme`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

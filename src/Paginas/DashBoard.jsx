@@ -181,7 +181,7 @@ function Dashboard() {
   ];
 
   const anioActual = new Date().getFullYear();
-  const anios = Array.from({ length: 10 }, (_, i) => anioActual - i);
+  const anios = Array.from({ length: 2 }, (_, i) => anioActual - i);
 
   const handleChange = (e) => {
     setFiltros(prev => ({ ...prev, [e.target.name]: parseInt(e.target.value) }));
@@ -193,7 +193,7 @@ function Dashboard() {
     setError(null);
     const params = new URLSearchParams({ usuarioId: user.id, empresaId: user.empresaId, ...filtros });
     try {
-      const res = await fetch(`/api-gestdoc/listarreportemateriales?${params.toString()}`, { headers: { 'Authorization': `Bearer ${token}` } });
+      const res = await fetch(`https://looper-gestdoc.azurewebsites.net/api/listarreportemateriales?${params.toString()}`, { headers: { 'Authorization': `Bearer ${token}` } });
       if (!res.ok) throw new Error(`Error ${res.status}`);
       const data = await res.json();
       const acumulado = data.reduce((acc, item) => {

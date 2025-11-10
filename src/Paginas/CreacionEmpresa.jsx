@@ -20,7 +20,7 @@ const CreacionEmpresa = () => {
     setMessage('');
 
     try {
-      const res = await fetch('http://localhost:7071/api/createempresa', { // Asumiendo que este es el endpoint
+      const res = await fetch('https://looper-usuarios.azurewebsites.net/api/createempresa', { // Asumiendo que este es el endpoint
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -63,11 +63,11 @@ const DatosUsuario = () => {
     if (changePassword) {
       dataToUpdate.password = password;
     }
-    http://localhost:7071/api/updateUsuario
+ 
     try {
       const res = await fetch(
-        //`https://looper-usuarios.azurewebsites.net/api/updateusuario`
-        'http://localhost:7071/api/updateUsuario', {
+        `https://looper-usuarios.azurewebsites.net/api/updateusuario`, {
+       
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToUpdate),
@@ -139,17 +139,7 @@ const DatosUsuario = () => {
             />
         </div>
         
-        <div>
-            <label htmlFor="url_avatar" className="block text-sm font-medium text-gray-700">URL del Avatar</label>
-            <input
-                type="url"
-                name="url_avatar"
-                id="url_avatar"
-                className="w-full bg-gray-100 text-xl p-4 rounded-xl mt-1"
-                onChange={handleChange}
-                value={formData.url_avatar || ""}
-            />
-        </div>
+
 
         <div>
             <label htmlFor="id_perfil_usuario" className="block text-sm font-medium text-gray-700">Perfil</label>
