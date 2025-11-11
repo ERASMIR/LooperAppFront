@@ -8,6 +8,28 @@ import { AuthContext } from "../context/AuthContext";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
+
+// ============================================================================
+// COMPONENTE DE MODAL DE ADVERTENCIA
+// ============================================================================
+
+const WarningModal = ({ message, onClose }) => (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+          <h3 className="text-lg font-bold text-yellow-600">Atención</h3>
+          <p className="mt-2 text-sm text-neutral-700">{message}</p>
+          <button
+              onClick={onClose}
+              className="mt-4 w-full bg-primary text-white font-semibold px-4 py-2 rounded-md hover:bg-primary/90 transition"
+          >
+              Entendido
+          </button>
+      </div>
+  </div>
+);
+
+
+
 // ============================================================================
 // COMPONENTES REUTILIZABLES
 // ============================================================================
@@ -167,6 +189,7 @@ function Dashboard() {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
   const [filtroCategoria, setFiltroCategoria] = useState("todas");
+  const [duplicateWarning, setDuplicateWarning] = useState(null);
 
   const [isTableOpen, setTableOpen] = useState(true);
   const [isChartOpen, setChartOpen] = useState(true);
@@ -181,7 +204,10 @@ function Dashboard() {
   ];
 
   const anioActual = new Date().getFullYear();
-  const anios = Array.from({ length: 2 }, (_, i) => anioActual - i);
+  //const anios = Array.from({ length: 2 }, (_, i) => anioActual - i);
+  const anioInicioFijo = 2024;
+  const numAnios = Math.max(0, anioActual - anioInicioFijo + 1);
+  const anios = Array.from({ length: numAnios }, (_, i) => anioActual - i);
 
   const handleChange = (e) => {
     setFiltros(prev => ({ ...prev, [e.target.name]: parseInt(e.target.value) }));
@@ -191,11 +217,24 @@ function Dashboard() {
     if (!user?.id || !user?.empresaId || !token) return;
     setCargando(true);
     setError(null);
+    setDuplicateWarning(null);
     const params = new URLSearchParams({ usuarioId: user.id, empresaId: user.empresaId, ...filtros });
     try {
       const res = await fetch(`https://looper-gestdoc.azurewebsites.net/api/listarreportemateriales?${params.toString()}`, { headers: { 'Authorization': `Bearer ${token}` } });
       if (!res.ok) throw new Error(`Error ${res.status}`);
       const data = await res.json();
+
+      const periodos = data.map(item => `${item.periodo_mes}-${item.periodo_anio}`);
+      const counts = periodos.reduce((acc, periodo) => {
+          acc[periodo] = (acc[periodo] || 0) + 1;
+          return acc;
+      }, {});
+      const duplicados = Object.entries(counts).filter(([_, count]) => count > 1).map(([periodo]) => periodo);
+
+      if (duplicados.length > 0) {
+          setDuplicateWarning(`Atención, hay más de un reporte para el periodo ${duplicados.join(', ')}. Por favor revíselos y elimine los duplicados para obtener una sumatoria real.`);
+      }
+
       const acumulado = data.reduce((acc, item) => {
         const reporte = Array.isArray(item.result_reporte) ? item.result_reporte : JSON.parse(item.result_reporte || "[]");
         reporte.forEach(r => {
@@ -250,6 +289,7 @@ function Dashboard() {
 
   return (
     <div className="flex flex-col h-full w-full min-w-full flex-grow p-4">
+      {duplicateWarning && <WarningModal message={duplicateWarning} onClose={() => setDuplicateWarning(null)} />}
       <header className="mb-6">
         <h1 className="text-2xl font-bold text-neutral-800">Visualización de Materiales</h1>
         <p className="text-neutral-600">Selecciona filtros para consultar los reportes.</p>

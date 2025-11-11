@@ -73,7 +73,11 @@ const Soporte = () => {
         adjuntos: adjuntosProcesados
       };
 
-      const response = await fetch('https://looper-usuarios.azurewebsites.net/api/crearticketsoporte', {
+      const response = await fetch(
+        
+        'https://looper-usuarios.azurewebsites.net/api/crearticketsoporte',
+        
+        {
         method: 'POST',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
