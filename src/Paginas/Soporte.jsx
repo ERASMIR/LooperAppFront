@@ -76,8 +76,8 @@ const Soporte = () => {
 
       const response = await fetch(
         
-        //'https://looper-usuarios.azurewebsites.net/api/crearticketsoporte',
-        'http://localhost:7071/api/crearTicketSoporte',
+        'https://looper-usuarios.azurewebsites.net/api/crearticketsoporte',
+        //'http://localhost:7071/api/crearTicketSoporte',
         
         {
         method: 'POST',
