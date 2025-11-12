@@ -34,7 +34,7 @@ const Header = () => {
       <div className="flex items-center gap-3">
         {/* ✅ Logo clickeable que lleva al inicio */}
         <img
-          src="/Logo-LoopeR3.png"
+          src="/imagenes/Logo-color.png"
           alt="Looper Logo"
           className="h-16 w-auto object-contain cursor-pointer hover:opacity-80 transition"
           onClick={() => navigate("/inicio")}
