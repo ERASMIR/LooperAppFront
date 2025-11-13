@@ -18,7 +18,7 @@ const Tutoriales = () => (
       <div className="aspect-w-16 aspect-h-9">
         <iframe
           className="w-full h-96 rounded-xl shadow-lg"
-          src="https://www.youtube-nocookie.com/embed/Z5SXMAjP2Nw"
+          src="https://drive.google.com/file/d/1y_asyzChEuQJIz1mxKqOi4UiiPk945EZ/preview"
           //src="https://www.youtube.com/embed/Z5SXMAjP2Nw"
           title="Elaboración de la matriz de materiales"
           frameBorder="0"
@@ -36,7 +36,7 @@ const Tutoriales = () => (
       <div className="aspect-w-16 aspect-h-9">
         <iframe
           className="w-full h-96 rounded-xl shadow-lg"
-          src="https://www.youtube-nocookie.com/embed/S7VjwjCtu4A"
+          src="https://drive.google.com/file/d/1Lx2lExg2QuO0Rz9cRKczwzs0hc8PrIA4/preview"
           //src="https://www.youtube.com/embed/S7VjwjCtu4A"
           title="Elaboración del registro de ventas"
           frameBorder="0"
