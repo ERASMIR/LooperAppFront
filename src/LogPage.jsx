@@ -74,7 +74,7 @@ export default function LogPage() {
       {/* 🔲 Capa oscura para contraste */}
       <div className="absolute inset-0 bg-black bg-opacity-60"></div>
 
-      <div className="relative z-10 flex flex-col items-center bg-white bg-opacity-95 rounded-2xl shadow-2xl p-8 w-11/12 sm:w-96 transition-all duration-500">
+      <div className="relative z-10 flex flex-col items-center bg-white bg-opacity-75 rounded-2xl shadow-2xl p-8 w-11/12 sm:w-96 transition-all duration-500">
         <img
           src={logoSN}
           alt="Looper Logo"
