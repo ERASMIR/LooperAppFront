@@ -40,7 +40,10 @@ const CreacionUsuario = () => {
     console.log("➡️ Enviando datos al backend:", formData);
 
     try {
-      const res = await fetch("https://looper-usuarios.azurewebsites.net/api/crearusuario", {
+      const res = await fetch(
+        //"https://looper-usuarios.azurewebsites.net/api/crearusuario",
+        "http://localhost:7074/api/crearUsuario",
+        {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

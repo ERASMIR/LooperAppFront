@@ -41,7 +41,7 @@ export default function Home() {
               rel="noopener noreferrer"
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-center"
             >
-              Descargar plantilla de materiales
+              Descargar Template "Matriz de materiales"
             </a>
 
             <a
@@ -50,8 +50,18 @@ export default function Home() {
               rel="noopener noreferrer"
               className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition text-center"
             >
-              Descargar plantilla de ventas
+              Descargar Template "Registro de ventas"
             </a>
+
+            <a
+              href="https://docs.google.com/spreadsheets/d/1ZYbVZJxulPv801MYQxL7IeFLFc0q_IaZ/edit?usp=sharing&ouid=117342122865482341602&rtpof=true&sd=true"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition text-center"
+            >
+              Descargar "Categorías de Materiales"
+            </a>
+
           </div>
         </div>
 
