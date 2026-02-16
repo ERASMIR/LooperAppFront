@@ -5,8 +5,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const Header = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, setEmpresaActiva } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [empresas, setEmpresas] = useState([]);
   const menuRef = useRef();
   const navigate = useNavigate();
 
@@ -21,6 +22,43 @@ const Header = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  // Cargar empresas del usuario al montar
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchEmpresas = async () => {
+      try {
+        const res = await fetch(
+          `/api-usuarios/getEmpresasByUsuario?usuarioId=${user.id}`
+        );
+        if (!res.ok) throw new Error("Error al obtener empresas");
+        const data = await res.json();
+        setEmpresas(data);
+
+        // Establecer la primera empresa de la lista como default
+        if (data.length > 0) {
+          const empresaActual = data.find((e) => e.id === user.empresaId);
+          if (!empresaActual) {
+            // Si la empresa del login no está en la lista, usar la primera
+            setEmpresaActiva(data[0].id, data[0].nombre);
+          }
+        }
+      } catch (error) {
+        console.error("❌ Error al cargar empresas del usuario:", error);
+      }
+    };
+
+    fetchEmpresas();
+  }, [user?.id]);
+
+  const handleEmpresaChange = (e) => {
+    const selectedId = e.target.value;
+    const selectedEmpresa = empresas.find((emp) => String(emp.id) === selectedId);
+    if (selectedEmpresa) {
+      setEmpresaActiva(selectedEmpresa.id, selectedEmpresa.nombre);
+    }
+  };
 
   if (!user) return null;
 
@@ -39,6 +77,26 @@ const Header = () => {
           className="h-16 w-auto object-contain cursor-pointer hover:opacity-80 transition"
           onClick={() => navigate("/inicio")}
         />
+      </div>
+
+      {/* Dropdown de empresas */}
+      <div className="flex items-center gap-3">
+        <span className="text-sm text-gray-500">Empresa seleccionada</span>
+        <select
+          value={user.empresaId || ""}
+          onChange={handleEmpresaChange}
+          className="appearance-none bg-transparent border-none text-lg text-gray-700 hover:text-primary transition cursor-pointer focus:outline-none pr-1"
+        >
+          {empresas.length === 0 && (
+            <option value={user.empresaId || ""}>{user.empresa || "Sin empresa"}</option>
+          )}
+          {empresas.map((emp) => (
+            <option key={emp.id} value={emp.id}>
+              {emp.nombre}
+            </option>
+          ))}
+        </select>
+        <ChevronDown size={18} className="text-gray-700 -ml-2 pointer-events-none" />
       </div>
 
       <div className="relative" ref={menuRef}>

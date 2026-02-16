@@ -27,7 +27,7 @@ const GestDoc = ({ sidebarCollapsed }) => {
         params.set('empresa', String(empresaId));
       }
 
-      const url = `https://looper-gestdoc.azurewebsites.net/api/listararchivos?${params.toString()}`;
+      const url = `/api-gestdoc/listarArchivos?${params.toString()}`;
 
 
       console.log('[GET] listarArchivos ->', url);
@@ -66,8 +66,10 @@ const GestDoc = ({ sidebarCollapsed }) => {
   useEffect(() => {
     if (tipoArchivo !== 'reportes') {
       fetchArchivos(tipoArchivo);
+    } else {
+      fetchReportesRep();
     }
-  }, [tipoArchivo, user]); // 👈 agrega user como dependencia
+  }, [tipoArchivo, user?.empresaId]); // re-fetch al cambiar empresa o tipo
 
 
 
@@ -77,7 +79,7 @@ const GestDoc = ({ sidebarCollapsed }) => {
       // 👇 ahora enviamos usuario y empresa
       const res = await fetch(
 
-        `https://looper-gestdoc.azurewebsites.net/api/listarreportesrep?usuario=${user.id}&empresa=${user.empresaId}`
+        `/api-gestdoc/listarReportesRep?usuario=${user.id}&empresa=${user.empresaId}`
 
       );
 
@@ -109,7 +111,7 @@ const GestDoc = ({ sidebarCollapsed }) => {
     try {
       const res = await fetch(
 
-        `https://looper-gestdoc.azurewebsites.net/api/eliminararchivo?id=${id}&tipo=${tipoArchivo}&usuario=${user.id}&empresa=${user.empresaId}`,
+        `/api-gestdoc/eliminarArchivo?id=${id}&tipo=${tipoArchivo}&usuario=${user.id}&empresa=${user.empresaId}`,
 
         
         { method: "DELETE" }

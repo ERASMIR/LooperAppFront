@@ -6,11 +6,11 @@ const CreacionUsuario = () => {
     id: uuidv4(),
     nombre: "",
     apellidos: "",
-    empresa_id: "", // 👈 ahora guardamos el id de la empresa
+    empresa_id: "",
     mail: "",
     password: "",
     url_avatar: "",
-    perfil_id: "2", // Por defecto, "usuarioREP"
+    id_perfil_usuario: "2", // Por defecto, "usuarioREP"
   });
 
   const [empresas, setEmpresas] = useState([]); // 👈 listado de empresas desde la API
@@ -20,7 +20,7 @@ const CreacionUsuario = () => {
   useEffect(() => {
     const fetchEmpresas = async () => {
       try {
-        const res = await fetch("https://looper-usuarios.azurewebsites.net/api/getempresas");
+        const res = await fetch("/api-usuarios/getempresas");
         const data = await res.json();
         setEmpresas(data);
       } catch (err) {
@@ -41,8 +41,7 @@ const CreacionUsuario = () => {
 
     try {
       const res = await fetch(
-        //"https://looper-usuarios.azurewebsites.net/api/crearusuario",
-        "http://localhost:7074/api/crearUsuario",
+        "/api-usuarios/crearUsuario",
         {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -153,10 +152,10 @@ const CreacionUsuario = () => {
         />
 
         <select
-          name="perfil_id"
+          name="id_perfil_usuario"
           className="w-full bg-gray-100 text-xl p-5 rounded-2xl focus:outline-none placeholder-gray-400"
           onChange={handleChange}
-          value={formData.perfil_id}
+          value={formData.id_perfil_usuario}
           required
         >
           <option value="1">Admin</option>

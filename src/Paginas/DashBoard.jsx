@@ -57,13 +57,13 @@ const Panel = ({ isOpen, toggle, className, children, collapsedIcon, style }) =>
 // ============================================================================
 // PANEL DE TABLA (IZQUIERDO)
 // ============================================================================
-const SumatoriaPanel = ({ tablaDatos, filtroCategoria, setFiltroCategoria }) => (
+const SumatoriaPanel = ({ tablaDatos, filtroCategoria, setFiltroCategoria, categorias, tienePeligrosidad }) => (
   <div className="p-4 pt-10 flex flex-col h-full w-full bg-white rounded-lg shadow-sm">
     <h2 className="text-lg font-semibold text-neutral-800 mb-3">
       📋 Sumatoria de materiales
     </h2>
     <div className="flex gap-2 mb-4 flex-wrap">
-      {['todas', 'domiciliario', 'no domiciliario'].map((val) => (
+      {['todas', ...categorias].map((val) => (
         <button
           key={val}
           onClick={() => setFiltroCategoria(val)}
@@ -83,20 +83,34 @@ const SumatoriaPanel = ({ tablaDatos, filtroCategoria, setFiltroCategoria }) => 
           <thead className="bg-neutral-100 text-neutral-700 sticky top-0 z-10">
             <tr>
               <th className="p-2 text-left font-semibold">Material</th>
-              <th className="p-2 text-right font-semibold">T. Peligrosos</th>
-              <th className="p-2 text-right font-semibold">T. No Peligrosos</th>
+              {tienePeligrosidad ? (
+                <>
+                  <th className="p-2 text-right font-semibold">T. Peligrosos</th>
+                  <th className="p-2 text-right font-semibold">T. No Peligrosos</th>
+                </>
+              ) : (
+                <th className="p-2 text-right font-semibold">Total</th>
+              )}
             </tr>
           </thead>
           <tbody>
             {tablaDatos.map((row) => (
               <tr key={row.material} className="border-t hover:bg-neutral-50">
                 <td className="p-2">{row.material}</td>
-                <td className="p-2 text-right tabular-nums">
-                  {(row.peligrosos ?? 0).toFixed(3)}
-                </td>
-                <td className="p-2 text-right tabular-nums">
-                  {(row.noPeligrosos ?? 0).toFixed(3)}
-                </td>
+                {tienePeligrosidad ? (
+                  <>
+                    <td className="p-2 text-right tabular-nums">
+                      {(row.peligrosos ?? 0).toFixed(3)}
+                    </td>
+                    <td className="p-2 text-right tabular-nums">
+                      {(row.noPeligrosos ?? 0).toFixed(3)}
+                    </td>
+                  </>
+                ) : (
+                  <td className="p-2 text-right tabular-nums">
+                    {(row.total ?? 0).toFixed(3)}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -190,6 +204,8 @@ function Dashboard() {
   const [error, setError] = useState(null);
   const [filtroCategoria, setFiltroCategoria] = useState("todas");
   const [duplicateWarning, setDuplicateWarning] = useState(null);
+  const [categorias, setCategorias] = useState([]);
+  const [tienePeligrosidad, setTienePeligrosidad] = useState(true);
 
   const [isTableOpen, setTableOpen] = useState(true);
   const [isChartOpen, setChartOpen] = useState(true);
@@ -220,7 +236,7 @@ function Dashboard() {
     setDuplicateWarning(null);
     const params = new URLSearchParams({ usuarioId: user.id, empresaId: user.empresaId, ...filtros });
     try {
-      const res = await fetch(`https://looper-gestdoc.azurewebsites.net/api/listarreportemateriales?${params.toString()}`, { headers: { 'Authorization': `Bearer ${token}` } });
+      const res = await fetch(`/api-gestdoc/listarReporteMateriales?${params.toString()}`, { headers: { 'Authorization': `Bearer ${token}` } });
       if (!res.ok) throw new Error(`Error ${res.status}`);
       const data = await res.json();
 
@@ -235,41 +251,96 @@ function Dashboard() {
           setDuplicateWarning(`Atención, hay más de un reporte para el periodo ${duplicados.join(', ')}. Por favor revíselos y elimine los duplicados para obtener una sumatoria real.`);
       }
 
+      // Detectar tipo de reporte (peligrosidad o total) y categorias dinamicamente
+      const allReportes = data.flatMap(item =>
+        Array.isArray(item.result_reporte) ? item.result_reporte : JSON.parse(item.result_reporte || "[]")
+      );
+      const getCat = (r) => (r["categoría"] || r["categoria"] || r["categoria_producto"] || "").toLowerCase().trim();
+      const getMat = (r) => (r["material"] || r["material_reciclado"] || r["nombre_material"] || "Desconocido").trim();
+      const detectedCats = [...new Set(allReportes.map(r => getCat(r)).filter(Boolean))];
+      const hasPeligrosidad = allReportes.some(r => r.hasOwnProperty("Materiales peligrosos"));
+
+      setCategorias(detectedCats);
+      setTienePeligrosidad(hasPeligrosidad);
+
+      const safeParseNum = (val) => {
+        if (val === undefined || val === null || val === "") return 0;
+        const s = String(val).trim().replace(/\s/g, "").replace(",", ".");
+        const n = Number(s);
+        return Number.isFinite(n) ? n : 0;
+      };
+
       const acumulado = data.reduce((acc, item) => {
         const reporte = Array.isArray(item.result_reporte) ? item.result_reporte : JSON.parse(item.result_reporte || "[]");
         reporte.forEach(r => {
-          const cat = (r["categoría"] || "").toLowerCase().trim();
-          if (cat !== "domiciliario" && cat !== "no domiciliario") return;
-          const material = (r.material || "Desconocido").trim();
-          if (!acc[material]) acc[material] = { dom: { p: 0, np: 0 }, no_dom: { p: 0, np: 0 } };
-          acc[material][cat === "domiciliario" ? "dom" : "no_dom"].p += parseFloat((r["Materiales peligrosos"] || "0").replace(",", "."));
-          acc[material][cat === "domiciliario" ? "dom" : "no_dom"].np += parseFloat((r["Materiales no peligrosos"] || "0").replace(",", "."));
+          const cat = getCat(r);
+          if (!cat) return;
+          const material = getMat(r);
+          if (!acc[material]) acc[material] = {};
+          if (!acc[material][cat]) acc[material][cat] = { p: 0, np: 0, total: 0 };
+
+          if (hasPeligrosidad) {
+            acc[material][cat].p += safeParseNum(r["Materiales peligrosos"]);
+            acc[material][cat].np += safeParseNum(r["Materiales no peligrosos"]);
+          } else {
+            acc[material][cat].total += safeParseNum(r["Total"]);
+          }
         });
         return acc;
       }, {});
-      const tabla = Object.entries(acumulado).map(([material, v]) => ({
-        material,
-        peligrosos: filtroCategoria === "todas" ? v.dom.p + v.no_dom.p : (filtroCategoria === "domiciliario" ? v.dom.p : v.no_dom.p),
-        noPeligrosos: filtroCategoria === "todas" ? v.dom.np + v.no_dom.np : (filtroCategoria === "domiciliario" ? v.dom.np : v.no_dom.np),
-      }));
+
+      const tabla = Object.entries(acumulado)
+        .filter(([, catData]) => {
+          if (filtroCategoria === "todas") return true;
+          return catData.hasOwnProperty(filtroCategoria);
+        })
+        .map(([material, catData]) => {
+          if (hasPeligrosidad) {
+            let p = 0, np = 0;
+            if (filtroCategoria === "todas") {
+              Object.values(catData).forEach(v => { p += v.p; np += v.np; });
+            } else {
+              p = catData[filtroCategoria].p;
+              np = catData[filtroCategoria].np;
+            }
+            return { material, peligrosos: p, noPeligrosos: np };
+          } else {
+            let total = 0;
+            if (filtroCategoria === "todas") {
+              Object.values(catData).forEach(v => { total += v.total; });
+            } else {
+              total = catData[filtroCategoria].total;
+            }
+            return { material, total };
+          }
+        });
       setTablaDatos(tabla.sort((a, b) => a.material.localeCompare(b.material)));
     } catch (err) {
       console.error(err); setError(err.message);
     } finally { setCargando(false); }
   };
 
-  useEffect(() => { obtenerDatos(); }, [filtroCategoria, user, token]);
+  useEffect(() => { obtenerDatos(); }, [filtroCategoria, user?.empresaId, token]);
 
   const datosGrafico = useMemo(() => {
     if (!tablaDatos.length) return null;
-    return {
-      labels: tablaDatos.map(d => d.material),
-      datasets: [
-        { label: "Peligrosos", data: tablaDatos.map(d => d.peligrosos), backgroundColor: '#f59e0b' }, // warning
-        { label: "No Peligrosos", data: tablaDatos.map(d => d.noPeligrosos), backgroundColor: '#00b86b' }, // primary
-      ],
-    };
-  }, [tablaDatos]);
+    if (tienePeligrosidad) {
+      return {
+        labels: tablaDatos.map(d => d.material),
+        datasets: [
+          { label: "Peligrosos", data: tablaDatos.map(d => d.peligrosos ?? 0), backgroundColor: '#f59e0b' },
+          { label: "No Peligrosos", data: tablaDatos.map(d => d.noPeligrosos ?? 0), backgroundColor: '#00b86b' },
+        ],
+      };
+    } else {
+      return {
+        labels: tablaDatos.map(d => d.material),
+        datasets: [
+          { label: "Total", data: tablaDatos.map(d => d.total ?? 0), backgroundColor: '#00b86b' },
+        ],
+      };
+    }
+  }, [tablaDatos, tienePeligrosidad]);
 
   const tablePanelStyle = {
     flexGrow: isTableOpen ? 1 : 0,
@@ -332,7 +403,7 @@ function Dashboard() {
           style={tablePanelStyle}
           collapsedIcon={<FaTable className="w-7 h-7" />}
         >
-          <SumatoriaPanel {...{ tablaDatos, filtroCategoria, setFiltroCategoria }} />
+          <SumatoriaPanel {...{ tablaDatos, filtroCategoria, setFiltroCategoria, categorias, tienePeligrosidad }} />
         </Panel>
         <Panel
           isOpen={isChartOpen}

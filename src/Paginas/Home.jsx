@@ -54,9 +54,8 @@ export default function Home() {
             </a>
 
             <a
-              href="https://docs.google.com/spreadsheets/d/1ZYbVZJxulPv801MYQxL7IeFLFc0q_IaZ/edit?usp=sharing&ouid=117342122865482341602&rtpof=true&sd=true"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/Categorias_Materiales.xlsx"
+              download="Categorias_Materiales.xlsx"
               className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition text-center"
             >
               Descargar "Categorías de Materiales"

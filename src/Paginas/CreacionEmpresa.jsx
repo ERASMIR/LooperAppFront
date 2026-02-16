@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const CreacionEmpresa = () => {
   const [formData, setFormData] = useState({
@@ -7,9 +7,18 @@ const CreacionEmpresa = () => {
     telefono: '',
     responsable: '',
     correo_responsable: '',
+    gransic_id: '',
   });
 
   const [message, setMessage] = useState('');
+  const [gransicList, setGransicList] = useState([]);
+
+  useEffect(() => {
+    fetch('/api-usuarios/getGransic')
+      .then((res) => res.json())
+      .then((data) => setGransicList(data))
+      .catch((err) => console.error('Error al cargar GRANSIC:', err));
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -20,7 +29,7 @@ const CreacionEmpresa = () => {
     setMessage('');
 
     try {
-      const res = await fetch('https://looper-usuarios.azurewebsites.net/api/createempresa', { // Asumiendo que este es el endpoint
+      const res = await fetch('/api-usuarios/createempresa', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -36,6 +45,7 @@ const CreacionEmpresa = () => {
           telefono: '',
           responsable: '',
           correo_responsable: '',
+          gransic_id: '',
         });
       } else {
         const errorData = await res.json();
@@ -93,6 +103,19 @@ const CreacionEmpresa = () => {
             onChange={handleChange}
             value={formData.correo_responsable}
           />
+          <select
+            name="gransic_id"
+            className="w-full bg-gray-100 text-xl p-4 rounded-xl focus:outline-none text-gray-700"
+            onChange={handleChange}
+            value={formData.gransic_id}
+          >
+            <option value="">Seleccionar GRANSIC</option>
+            {gransicList.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.nombre}
+              </option>
+            ))}
+          </select>
           <button
             type="submit"
             className="w-full p-4 text-xl font-bold text-white bg-blue-500 rounded-xl hover:bg-blue-600 focus:outline-none"

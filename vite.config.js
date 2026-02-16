@@ -6,6 +6,14 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
+      '/api-usuarios': {
+        target: 'http://localhost:7073',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api-usuarios/, '/api'),
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+        }
+      },
       '/api-procesar': {
         target: 'https://looperapp.azurewebsites.net',
         changeOrigin: true,

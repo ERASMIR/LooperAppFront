@@ -25,7 +25,7 @@ export default function LogPage() {
     setError("");
 
     try {
-      const res = await fetch(`https://looper-usuarios.azurewebsites.net/api/login`, {
+      const res = await fetch(`/api-usuarios/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -52,7 +52,7 @@ export default function LogPage() {
     setMessage("");
 
     try {
-      await fetch(`https://looper-usuarios.azurewebsites.net/api/recuperarcontrasena`, {
+      await fetch(`/api-usuarios/recuperarcontrasena`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

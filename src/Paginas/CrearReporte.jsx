@@ -78,12 +78,13 @@ const CrearReporte = () => {
   const empresaId = user?.empresaId;
   const userId = user?.id;
   const [procesando, setProcesando] = useState(false);
+  const [gransicId, setGransicId] = useState(null);
 
   const fetchTipo = async (tipo) => {
     const params = new URLSearchParams({ tipo });
     if (userId) params.set('usuario', String(userId));
     if (empresaId) params.set('empresa', String(empresaId));
-    const url = `https://looper-gestdoc.azurewebsites.net/api/listararchivos?${params.toString()}`;
+    const url = `/api-gestdoc/listarArchivos?${params.toString()}`; // looper-gestDoc
     const res = await fetch(url);
     if (!res.ok) return [];
     const data = await res.json();
@@ -130,7 +131,18 @@ const CrearReporte = () => {
       setVentasArchivos(ventas);
     };
     obtenerArchivosSubidos();
-  }, [user, empresaId]);
+  }, [user?.empresaId]);
+
+  useEffect(() => {
+    if (!empresaId) return;
+    fetch('/api-usuarios/getEmpresas')
+      .then((res) => res.json())
+      .then((empresas) => {
+        const actual = empresas.find((e) => String(e.id) === String(empresaId));
+        if (actual) setGransicId(actual.gransic_id);
+      })
+      .catch((err) => console.error("Error al obtener gransic_id:", err));
+  }, [empresaId]);
   
   const subirArchivoAzure = async (archivo, tipo) => {
     if (!archivo || !archivo.file) return alert("Archivo no seleccionado");
@@ -147,7 +159,7 @@ const CrearReporte = () => {
         base64,
       };
       try {
-        const res = await fetch('https://looper-gestreport.azurewebsites.net/api/subirarchivo', {
+        const res = await fetch('/api-gestreport/subirArchivo', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -210,11 +222,12 @@ const handleProcesar = async () => {
       salesUrl: venObj.url,
       id_usuario: String(userId),
       empresa_id: Number(empresaId),
+      gransic_id: gransicId,
     };
 
     setProcesando(true);
 
-    const res = await fetch("https://looperapp.azurewebsites.net/api/looperprocesfiles3", {
+    const res = await fetch("/api-procesar/LooperProcesFiles4", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -285,7 +298,7 @@ const handleProcesar = async () => {
         result_procesamiento: resultadoProcesamiento,
         result_reporte: resultadoJSON,
       };
-      const res = await fetch(`https://looper-gestreport.azurewebsites.net/api/guardarinforme`, {
+      const res = await fetch(`/api-gestreport/guardarInforme`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -417,6 +430,7 @@ const handleProcesar = async () => {
                       <option value="">Año</option>
                       <option value="2024">2024</option>
                       <option value="2025">2025</option>
+                      <option value="2026">2026</option>
                     </select>
 
                     {/* 🔽 Alineado al mismo nivel que los selects */}
@@ -456,9 +470,9 @@ const handleProcesar = async () => {
 
               {mostrarTablaJSON && (
                 <div className="mt-6">
-                  {/* 🔘 Selector de categoría principal */}
+                  {/* 🔘 Selector de categoría principal (dinámico) */}
                   <div className="flex gap-4 mb-6">
-                    {["domiciliario", "no domiciliario"].map((tipo) => (
+                    {Array.from(new Set(resultadoJSON.map((r) => r["categoría"] ?? r["categoria"]))).filter(Boolean).map((tipo) => (
                       <button
                         key={tipo}
                         onClick={() => setFiltroCategorias([tipo])}
@@ -468,7 +482,7 @@ const handleProcesar = async () => {
                             : "bg-white text-gray-700 border-gray-300 hover:bg-neutral-100"
                         }`}
                       >
-                        {tipo === "domiciliario" ? "🏠 Domiciliario" : "🏢 No domiciliario"}
+                        {tipo}
                       </button>
                     ))}
                   </div>
@@ -496,96 +510,101 @@ const handleProcesar = async () => {
                     </div>
                   </div>
 
-                  {/* 📊 Tabla de resultados */}
-                  <div className="overflow-x-auto mt-6">
-                    <table className="min-w-full bg-white border border-gray-200 rounded-xl shadow text-sm">
-                      <thead className="bg-gray-100">
-                        <tr>
-                          <th className="px-4 py-2 text-left">Categoría</th>
-                          <th className="px-4 py-2 text-left">Material</th>
-                          <th className="px-4 py-2 text-right">T. Peligrosos</th>
-                          <th className="px-4 py-2 text-right">T. No Peligrosos</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {resultadoJSON
-                          .filter((row) => {
-                            const categoriaVal =
-                              row["categoría"] ??
-                              row["categoria"] ??
-                              row["categoria_producto"] ??
-                              row["categoriaProducto"];
-                            const materialVal =
-                              row["material"] ??
-                              row["material_reciclado"] ??
-                              row["nombre_material"] ??
-                              row["materialNombre"];
-                            const catOk =
-                              filtroCategorias.length === 0 ||
-                              (categoriaVal && filtroCategorias.includes(String(categoriaVal)));
-                            const matOk =
-                              filtroMateriales.length === 0 ||
-                              (materialVal && filtroMateriales.includes(String(materialVal)));
-                            return catOk && matOk;
-                          })
-                          .map((row, i) => {
-                            const get = (keys) => {
-                              for (const k of keys) {
-                                if (row[k] !== undefined && row[k] !== null) return row[k];
-                              }
-                              return undefined;
-                            };
+                  {/* 📊 Tabla de resultados (dinámica según GRANSIC) */}
+                  {(() => {
+                    const tienePeligrosidad = resultadoJSON.length > 0 && resultadoJSON[0].hasOwnProperty("Materiales peligrosos");
+                    return (
+                      <div className="overflow-x-auto mt-6">
+                        <table className="min-w-full bg-white border border-gray-200 rounded-xl shadow text-sm">
+                          <thead className="bg-gray-100">
+                            <tr>
+                              <th className="px-4 py-2 text-left">Categoría</th>
+                              <th className="px-4 py-2 text-left">Material</th>
+                              {tienePeligrosidad ? (
+                                <>
+                                  <th className="px-4 py-2 text-right">T. Peligrosos</th>
+                                  <th className="px-4 py-2 text-right">T. No Peligrosos</th>
+                                </>
+                              ) : (
+                                <th className="px-4 py-2 text-right">Total</th>
+                              )}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {resultadoJSON
+                              .filter((row) => {
+                                const categoriaVal =
+                                  row["categoría"] ??
+                                  row["categoria"] ??
+                                  row["categoria_producto"] ??
+                                  row["categoriaProducto"];
+                                const materialVal =
+                                  row["material"] ??
+                                  row["material_reciclado"] ??
+                                  row["nombre_material"] ??
+                                  row["materialNombre"];
+                                const catOk =
+                                  filtroCategorias.length === 0 ||
+                                  (categoriaVal && filtroCategorias.includes(String(categoriaVal)));
+                                const matOk =
+                                  filtroMateriales.length === 0 ||
+                                  (materialVal && filtroMateriales.includes(String(materialVal)));
+                                return catOk && matOk;
+                              })
+                              .map((row, i) => {
+                                const get = (keys) => {
+                                  for (const k of keys) {
+                                    if (row[k] !== undefined && row[k] !== null) return row[k];
+                                  }
+                                  return undefined;
+                                };
 
-                            const categoria =
-                              get(["categoría", "categoria", "categoria_producto", "categoriaProducto"]) ||
-                              "—";
-                            const material =
-                              get(["material", "material_reciclado", "nombre_material", "materialNombre"]) ||
-                              "—";
+                                const categoria =
+                                  get(["categoría", "categoria", "categoria_producto", "categoriaProducto"]) ||
+                                  "—";
+                                const material =
+                                  get(["material", "material_reciclado", "nombre_material", "materialNombre"]) ||
+                                  "—";
 
-                            const parseNum = (val) => {
-                              if (val === undefined || val === null || val === "") return 0;
-                              if (typeof val === "number") return val;
-                              const s = String(val).trim().replace(/\s/g, "").replace(",", ".");
-                              const n = Number(s);
-                              return Number.isFinite(n) ? n : 0;
-                            };
+                                const parseNum = (val) => {
+                                  if (val === undefined || val === null || val === "") return 0;
+                                  if (typeof val === "number") return val;
+                                  const s = String(val).trim().replace(/\s/g, "").replace(",", ".");
+                                  const n = Number(s);
+                                  return Number.isFinite(n) ? n : 0;
+                                };
 
-                            const peligrosos = parseNum(
-                              get([
-                                "Materiales peligrosos",
-                                "materiales_peligrosos",
-                                "total_peligrosos",
-                                "peligrosos",
-                                "t_peligrosos",
-                              ])
-                            );
-                            const noPeligrosos = parseNum(
-                              get([
-                                "Materiales no peligrosos",
-                                "materiales_no_peligrosos",
-                                "total_no_peligrosos",
-                                "no_peligrosos",
-                                "t_no_peligrosos",
-                              ])
-                            );
-
-                            return (
-                              <tr key={`${i}-${material}`} className="border-t hover:bg-neutral-50">
-                                <td className="px-4 py-2">{categoria}</td>
-                                <td className="px-4 py-2">{material}</td>
-                                <td className="px-4 py-2 text-right tabular-nums">
-                                  {peligrosos.toFixed(6)}
-                                </td>
-                                <td className="px-4 py-2 text-right tabular-nums">
-                                  {noPeligrosos.toFixed(6)}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                      </tbody>
-                    </table>
-                  </div>
+                                if (tienePeligrosidad) {
+                                  const peligrosos = parseNum(
+                                    get(["Materiales peligrosos", "materiales_peligrosos", "total_peligrosos", "peligrosos", "t_peligrosos"])
+                                  );
+                                  const noPeligrosos = parseNum(
+                                    get(["Materiales no peligrosos", "materiales_no_peligrosos", "total_no_peligrosos", "no_peligrosos", "t_no_peligrosos"])
+                                  );
+                                  return (
+                                    <tr key={`${i}-${material}`} className="border-t hover:bg-neutral-50">
+                                      <td className="px-4 py-2">{categoria}</td>
+                                      <td className="px-4 py-2">{material}</td>
+                                      <td className="px-4 py-2 text-right tabular-nums">{peligrosos.toFixed(6)}</td>
+                                      <td className="px-4 py-2 text-right tabular-nums">{noPeligrosos.toFixed(6)}</td>
+                                    </tr>
+                                  );
+                                } else {
+                                  const total = parseNum(get(["Total", "total"]));
+                                  return (
+                                    <tr key={`${i}-${material}`} className="border-t hover:bg-neutral-50">
+                                      <td className="px-4 py-2">{categoria}</td>
+                                      <td className="px-4 py-2">{material}</td>
+                                      <td className="px-4 py-2 text-right tabular-nums">{total.toFixed(6)}</td>
+                                    </tr>
+                                  );
+                                }
+                              })}
+                          </tbody>
+                        </table>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 

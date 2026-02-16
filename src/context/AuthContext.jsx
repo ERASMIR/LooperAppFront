@@ -42,6 +42,13 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("token", token);
   };
 
+  // Función para cambiar la empresa activa
+  const setEmpresaActiva = (empresaId, empresaNombre) => {
+    const updatedUser = { ...user, empresaId, empresa: empresaNombre };
+    setUser(updatedUser);
+    localStorage.setItem("usuario", JSON.stringify(updatedUser));
+  };
+
   // Función para cerrar sesión
   const logout = () => {
     setUser(null);
@@ -51,7 +58,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, login, logout, setEmpresaActiva }}>
       {children}
     </AuthContext.Provider>
   );
