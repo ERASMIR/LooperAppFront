@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext.jsx";
+import { API_GESTDOC } from "../config/api";
 
 
 const GestDoc = ({ sidebarCollapsed }) => {
@@ -27,7 +28,7 @@ const GestDoc = ({ sidebarCollapsed }) => {
         params.set('empresa', String(empresaId));
       }
 
-      const url = `/api-gestdoc/listarArchivos?${params.toString()}`;
+      const url = `${API_GESTDOC}/listarArchivos?${params.toString()}`;
 
 
       console.log('[GET] listarArchivos ->', url);
@@ -79,7 +80,7 @@ const GestDoc = ({ sidebarCollapsed }) => {
       // 👇 ahora enviamos usuario y empresa
       const res = await fetch(
 
-        `/api-gestdoc/listarReportesRep?usuario=${user.id}&empresa=${user.empresaId}`
+        `${API_GESTDOC}/listarReportesRep?usuario=${user.id}&empresa=${user.empresaId}`
 
       );
 
@@ -111,7 +112,7 @@ const GestDoc = ({ sidebarCollapsed }) => {
     try {
       const res = await fetch(
 
-        `/api-gestdoc/eliminarArchivo?id=${id}&tipo=${tipoArchivo}&usuario=${user.id}&empresa=${user.empresaId}`,
+        `${API_GESTDOC}/eliminarArchivo?id=${id}&tipo=${tipoArchivo}&usuario=${user.id}&empresa=${user.empresaId}`,
 
         
         { method: "DELETE" }

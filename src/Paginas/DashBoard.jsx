@@ -5,6 +5,7 @@ import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend,
 } from 'chart.js';
 import { AuthContext } from "../context/AuthContext";
+import { API_GESTDOC } from "../config/api";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -236,7 +237,7 @@ function Dashboard() {
     setDuplicateWarning(null);
     const params = new URLSearchParams({ usuarioId: user.id, empresaId: user.empresaId, ...filtros });
     try {
-      const res = await fetch(`/api-gestdoc/listarReporteMateriales?${params.toString()}`, { headers: { 'Authorization': `Bearer ${token}` } });
+      const res = await fetch(`${API_GESTDOC}/listarReporteMateriales?${params.toString()}`, { headers: { 'Authorization': `Bearer ${token}` } });
       if (!res.ok) throw new Error(`Error ${res.status}`);
       const data = await res.json();
 

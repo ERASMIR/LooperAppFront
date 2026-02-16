@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../context/AuthContext.jsx";
+import { API_USUARIOS } from "../config/api";
 
 const DatosUsuario = () => {
   const { user } = useContext(AuthContext);
@@ -17,7 +18,7 @@ const DatosUsuario = () => {
     const fetchUsuario = async () => {
       try {
         const res = await fetch(
-          `/api-usuarios/getusuariobyid?id=${user.id}`
+          `${API_USUARIOS}/getusuariobyid?id=${user.id}`
         );
         if (!res.ok) throw new Error("Error al obtener usuario");
         const data = await res.json();
@@ -66,7 +67,7 @@ const DatosUsuario = () => {
  
     try {
       const res = await fetch(
-        `/api-usuarios/updateusuario`, {
+        `${API_USUARIOS}/updateusuario`, {
        
         method: "PUT",
         headers: { "Content-Type": "application/json" },

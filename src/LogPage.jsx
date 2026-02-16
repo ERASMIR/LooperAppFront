@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "./context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { API_USUARIOS } from "./config/api";
 
 export default function LogPage() {
   const [email, setEmail] = useState("");
@@ -25,7 +26,7 @@ export default function LogPage() {
     setError("");
 
     try {
-      const res = await fetch(`/api-usuarios/login`, {
+      const res = await fetch(`${API_USUARIOS}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -52,7 +53,7 @@ export default function LogPage() {
     setMessage("");
 
     try {
-      await fetch(`/api-usuarios/recuperarcontrasena`, {
+      await fetch(`${API_USUARIOS}/recuperarcontrasena`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

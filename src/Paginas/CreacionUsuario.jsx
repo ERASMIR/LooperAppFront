@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
+import { API_USUARIOS } from "../config/api";
 
 const CreacionUsuario = () => {
   const [formData, setFormData] = useState({
@@ -20,7 +21,7 @@ const CreacionUsuario = () => {
   useEffect(() => {
     const fetchEmpresas = async () => {
       try {
-        const res = await fetch("/api-usuarios/getempresas");
+        const res = await fetch(`${API_USUARIOS}/getempresas`);
         const data = await res.json();
         setEmpresas(data);
       } catch (err) {
@@ -41,7 +42,7 @@ const CreacionUsuario = () => {
 
     try {
       const res = await fetch(
-        "/api-usuarios/crearUsuario",
+        `${API_USUARIOS}/crearUsuario`,
         {
         method: "POST",
         headers: { "Content-Type": "application/json" },

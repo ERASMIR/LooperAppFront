@@ -1,5 +1,6 @@
 import React, { useState, useContext, useRef } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { API_USUARIOS } from '../config/api';
 
 const Soporte = () => {
   const { user } = useContext(AuthContext);
@@ -76,7 +77,7 @@ const Soporte = () => {
 
       const response = await fetch(
         
-        '/api-usuarios/crearTicketSoporte',
+        `${API_USUARIOS}/crearTicketSoporte`,
         
         {
         method: 'POST',

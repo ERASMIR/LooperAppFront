@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { API_USUARIOS } from "../config/api";
 
 const Header = () => {
   const { user, logout, setEmpresaActiva } = useAuth();
@@ -30,7 +31,7 @@ const Header = () => {
     const fetchEmpresas = async () => {
       try {
         const res = await fetch(
-          `/api-usuarios/getEmpresasByUsuario?usuarioId=${user.id}`
+          `${API_USUARIOS}/getEmpresasByUsuario?usuarioId=${user.id}`
         );
         if (!res.ok) throw new Error("Error al obtener empresas");
         const data = await res.json();

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_USUARIOS } from '../config/api';
 
 const CreacionEmpresa = () => {
   const [formData, setFormData] = useState({
@@ -14,7 +15,7 @@ const CreacionEmpresa = () => {
   const [gransicList, setGransicList] = useState([]);
 
   useEffect(() => {
-    fetch('/api-usuarios/getGransic')
+    fetch(`${API_USUARIOS}/getGransic`)
       .then((res) => res.json())
       .then((data) => setGransicList(data))
       .catch((err) => console.error('Error al cargar GRANSIC:', err));
@@ -29,7 +30,7 @@ const CreacionEmpresa = () => {
     setMessage('');
 
     try {
-      const res = await fetch('/api-usuarios/createempresa', {
+      const res = await fetch(`${API_USUARIOS}/createempresa`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

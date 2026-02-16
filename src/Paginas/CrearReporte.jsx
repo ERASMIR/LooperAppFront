@@ -3,6 +3,7 @@ import { FolderUp, SquareArrowUp, ListChecks, FileCog } from "lucide-react";
 import { FaFileDownload } from "react-icons/fa";
 import { TbBrowserMaximize } from "react-icons/tb";
 import { AuthContext } from "../context/AuthContext";
+import { API_USUARIOS, API_GESTDOC, API_GESTREPORT, API_PROCESAR } from "../config/api";
 
 const Panel = ({ title, collapsed, setCollapsed, Icon, children }) => {
   return (
@@ -84,7 +85,7 @@ const CrearReporte = () => {
     const params = new URLSearchParams({ tipo });
     if (userId) params.set('usuario', String(userId));
     if (empresaId) params.set('empresa', String(empresaId));
-    const url = `/api-gestdoc/listarArchivos?${params.toString()}`; // looper-gestDoc
+    const url = `${API_GESTDOC}/listarArchivos?${params.toString()}`; // looper-gestDoc
     const res = await fetch(url);
     if (!res.ok) return [];
     const data = await res.json();
@@ -135,7 +136,7 @@ const CrearReporte = () => {
 
   useEffect(() => {
     if (!empresaId) return;
-    fetch('/api-usuarios/getEmpresas')
+    fetch(`${API_USUARIOS}/getEmpresas`)
       .then((res) => res.json())
       .then((empresas) => {
         const actual = empresas.find((e) => String(e.id) === String(empresaId));
@@ -159,7 +160,7 @@ const CrearReporte = () => {
         base64,
       };
       try {
-        const res = await fetch('/api-gestreport/subirArchivo', {
+        const res = await fetch(`${API_GESTREPORT}/subirArchivo`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -227,7 +228,7 @@ const handleProcesar = async () => {
 
     setProcesando(true);
 
-    const res = await fetch("/api-procesar/LooperProcesFiles4", {
+    const res = await fetch(`${API_PROCESAR}/LooperProcesFiles4`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -298,7 +299,7 @@ const handleProcesar = async () => {
         result_procesamiento: resultadoProcesamiento,
         result_reporte: resultadoJSON,
       };
-      const res = await fetch(`/api-gestreport/guardarInforme`, {
+      const res = await fetch(`${API_GESTREPORT}/guardarInforme`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
