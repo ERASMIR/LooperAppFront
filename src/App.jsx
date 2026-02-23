@@ -17,6 +17,7 @@ import CreacionEmpresa from './Paginas/CreacionEmpresa';
 import Dashboard from './Paginas/DashBoard';
 import Ecologica from './Paginas/ValidEcologica';
 import PrivateRoute from './Componentes/PrivateRoute';
+import GestionUsuarios from './Paginas/GestionUsuarios';
 
 // Layout principal de la aplicación
 function Layout({ children }) {
@@ -74,6 +75,7 @@ function App() {
           <Route path="/crear-empresa" element={<PrivateRoute allowedProfiles={['dev']}><CreacionEmpresa /></PrivateRoute>} />
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/validacion-ecologica" element={<PrivateRoute><Ecologica /></PrivateRoute>} />
+          <Route path="/gestion-usuarios" element={<PrivateRoute allowedProfiles={['dev']}><GestionUsuarios /></PrivateRoute>} />
 
           {/* Redirección por defecto */}
           <Route path="*" element={<Navigate to="/inicio" replace />} />

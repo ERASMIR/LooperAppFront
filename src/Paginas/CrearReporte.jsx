@@ -4,6 +4,119 @@ import { FaFileDownload } from "react-icons/fa";
 import { TbBrowserMaximize } from "react-icons/tb";
 import { AuthContext } from "../context/AuthContext";
 import { API_USUARIOS, API_GESTDOC, API_GESTREPORT, API_PROCESAR } from "../config/api";
+import * as XLSX from "xlsx";
+
+// ─── Definición de campos requeridos para cada tipo de archivo ───────────────
+const MATRIZ_FIELDS = [
+  { key: "SKU",            label: "SKU / Código de producto",      required: true  },
+  { key: "Unidad de venta",label: "Unidad de venta",               required: true  },
+  { key: "TON",            label: "Peso por unidad (TON)",          required: true  },
+  { key: "Materiales",     label: "Material reciclado",             required: true  },
+  { key: "Categoria",      label: "Categoría del material",         required: true  },
+  { key: "Peligrosidad",   label: "Peligrosidad (opcional)",        required: false },
+];
+
+const VENTAS_FIELDS = [
+  { key: "SKU",            label: "SKU / Código de producto",      required: true },
+  { key: "Unidad de venta",label: "Unidad de venta",               required: true },
+  { key: "Cantidad",       label: "Cantidad vendida",               required: true },
+];
+
+// ─── Modal de mapeo de columnas ───────────────────────────────────────────────
+const ColumnMapperModal = ({ tipo, columns, onConfirm, onCancel }) => {
+  const fields = tipo === "matriz" ? MATRIZ_FIELDS : VENTAS_FIELDS;
+  const title  = tipo === "matriz" ? "Matriz de Materiales" : "Registro de Ventas";
+
+  // Intenta pre-seleccionar columnas que coincidan por nombre
+  const autoMatch = (key) => {
+    const lower = key.toLowerCase();
+    return (
+      columns.find((c) => c.toLowerCase() === lower) ||
+      columns.find((c) => c.toLowerCase().includes(lower.split(" ")[0])) ||
+      ""
+    );
+  };
+
+  const [mapping, setMapping] = useState(() => {
+    const initial = {};
+    fields.forEach((f) => { initial[f.key] = autoMatch(f.key); });
+    return initial;
+  });
+
+  const handleConfirm = () => {
+    // Si no hay columnas disponibles, confirmar vacío (sin mapeo)
+    if (columns.length === 0) {
+      onConfirm({});
+      return;
+    }
+    const missing = fields.filter((f) => f.required && !mapping[f.key]);
+    if (missing.length > 0) {
+      alert(`Por favor asigna las columnas requeridas:\n• ${missing.map((f) => f.label).join("\n• ")}`);
+      return;
+    }
+    onConfirm(mapping);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+        <div className="px-6 pt-6 pb-2 border-b border-gray-100">
+          <h3 className="text-lg font-bold text-gray-800">Mapear columnas del archivo</h3>
+          <p className="text-sm text-gray-500 mt-1">
+            Indica qué columna del archivo <span className="font-semibold">{title}</span> corresponde a cada campo requerido.
+          </p>
+        </div>
+        <div className="px-6 py-4 space-y-3 max-h-96 overflow-y-auto">
+          {columns.length === 0 ? (
+            <div className="text-center py-6 space-y-2">
+              <p className="text-sm font-medium text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                ⚠ No se pudieron detectar columnas en este archivo.
+              </p>
+              <p className="text-xs text-gray-500">
+                El archivo puede tener un formato no estándar o la primera fila no contiene encabezados.
+                Puedes continuar sin mapeo (se usarán los nombres de columna exactos del archivo).
+              </p>
+            </div>
+          ) : (
+            fields.map((field) => (
+              <div key={field.key} className="flex items-center gap-3">
+                <label className="w-44 text-sm font-medium text-gray-700 flex-shrink-0">
+                  {field.label}
+                  {field.required && <span className="text-red-500 ml-1">*</span>}
+                </label>
+                <select
+                  value={mapping[field.key] || ""}
+                  onChange={(e) => setMapping((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                  className="flex-1 bg-gray-100 border border-gray-200 rounded-lg p-2 text-sm"
+                >
+                  {!field.required && <option value="">— No aplica —</option>}
+                  {field.required && <option value="">Selecciona una columna</option>}
+                  {columns.map((col) => (
+                    <option key={col} value={col}>{col}</option>
+                  ))}
+                </select>
+              </div>
+            ))
+          )}
+        </div>
+        <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleConfirm}
+            className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            {columns.length === 0 ? "Continuar sin mapeo" : "Confirmar columnas"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Panel = ({ title, collapsed, setCollapsed, Icon, children }) => {
   return (
@@ -80,6 +193,13 @@ const CrearReporte = () => {
   const userId = user?.id;
   const [procesando, setProcesando] = useState(false);
   const [gransicId, setGransicId] = useState(null);
+
+  // ─── Mapeo de columnas ───────────────────────────────────────────────────────
+  const [matrizColumns,   setMatrizColumns]   = useState([]);   // columnas leídas del Excel
+  const [ventasColumns,   setVentasColumns]   = useState([]);
+  const [showMapModal,    setShowMapModal]     = useState(null); // null | 'matriz' | 'ventas'
+  const [matrizColumnMap, setMatrizColumnMap] = useState({});   // {campo_esperado: col_real}
+  const [ventasColumnMap, setVentasColumnMap] = useState({});
 
   const fetchTipo = async (tipo) => {
     const params = new URLSearchParams({ tipo });
@@ -184,21 +304,74 @@ const CrearReporte = () => {
     reader.readAsDataURL(archivo.file);
   };
   
-  // 📂 Manejo de carga de archivos
-const handleFileUpload = (e, tipo) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
+  // 📂 Lee las columnas (primera fila) de un archivo Excel usando SheetJS
+  const readExcelColumns = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const wb   = XLSX.read(data, { type: "array" });
+          const ws   = wb.Sheets[wb.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+          resolve((rows[0] || []).map(String).filter(Boolean));
+        } catch (err) { reject(err); }
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    });
 
-  const nuevoArchivo = { id: crypto.randomUUID(), nombre: file.name, file };
+  // 📂 Manejo de carga de archivos (lee columnas y abre modal de mapeo)
+  const handleFileUpload = async (e, tipo) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  if (tipo === "matriz") {
-    setArchivoMatriz(nuevoArchivo);
-  } else if (tipo === "ventas") {
-    setArchivoVentas(nuevoArchivo);
-  } else {
-    console.warn(`Tipo de archivo no reconocido: ${tipo}`);
-  }
-};
+    const nuevoArchivo = { id: crypto.randomUUID(), nombre: file.name, file };
+
+    if (tipo === "matriz") {
+      setArchivoMatriz(nuevoArchivo);
+      // Intentar cargar mapeo previo guardado en localStorage
+      const saved = localStorage.getItem(`looper_colmap_${file.name}`);
+      if (saved) {
+        try { setMatrizColumnMap(JSON.parse(saved)); } catch (_) { /* ignora */ }
+      } else {
+        setMatrizColumnMap({});
+      }
+      // Leer columnas del Excel (si falla, se abre igual la modal con lista vacía)
+      let cols = [];
+      try { cols = await readExcelColumns(file); } catch {
+        console.warn("No se pudieron leer columnas del archivo de Matriz.");
+      }
+      setMatrizColumns(cols);
+      setShowMapModal("matriz");  // siempre abrir modal
+    } else if (tipo === "ventas") {
+      setArchivoVentas(nuevoArchivo);
+      const saved = localStorage.getItem(`looper_colmap_${file.name}`);
+      if (saved) {
+        try { setVentasColumnMap(JSON.parse(saved)); } catch (_) { /* ignora */ }
+      } else {
+        setVentasColumnMap({});
+      }
+      let cols = [];
+      try { cols = await readExcelColumns(file); } catch {
+        console.warn("No se pudieron leer columnas del archivo de Ventas.");
+      }
+      setVentasColumns(cols);
+      setShowMapModal("ventas");  // siempre abrir modal
+    }
+  };
+
+  // ✅ Confirma el mapeo y lo persiste en localStorage
+  const handleConfirmMapping = (tipo, mapping) => {
+    if (tipo === "matriz") {
+      setMatrizColumnMap(mapping);
+      if (archivoMatriz) localStorage.setItem(`looper_colmap_${archivoMatriz.nombre}`, JSON.stringify(mapping));
+    } else {
+      setVentasColumnMap(mapping);
+      if (archivoVentas) localStorage.setItem(`looper_colmap_${archivoVentas.nombre}`, JSON.stringify(mapping));
+    }
+    setShowMapModal(null);
+  };
 
 // ⚙️ Manejo de procesamiento de archivos
 const handleProcesar = async () => {
@@ -219,11 +392,14 @@ const handleProcesar = async () => {
 
   try {
     const payload = {
-      matrixUrl: matObj.url,
-      salesUrl: venObj.url,
-      id_usuario: String(userId),
-      empresa_id: Number(empresaId),
-      gransic_id: gransicId,
+      matrixUrl:      matObj.url,
+      salesUrl:       venObj.url,
+      id_usuario:     String(userId),
+      empresa_id:     Number(empresaId),
+      gransic_id:     gransicId,
+      // Mapeos de columnas (solo si el usuario los configuró)
+      ...(Object.keys(matrizColumnMap).length > 0 && { matrixColumnMap: matrizColumnMap }),
+      ...(Object.keys(ventasColumnMap).length > 0  && { salesColumnMap:  ventasColumnMap  }),
     };
 
     setProcesando(true);
@@ -317,7 +493,25 @@ const handleProcesar = async () => {
            (materialSeleccionado ? item.material_reciclado === materialSeleccionado : true);
   });
 
+  // Al seleccionar un archivo del dropdown, intenta cargar su mapeo guardado
+  const handleSelectMatriz = (nombre) => {
+    setArchivoMatrizSeleccionado(nombre);
+    const saved = localStorage.getItem(`looper_colmap_${nombre}`);
+    if (saved) {
+      try { setMatrizColumnMap(JSON.parse(saved)); } catch (_) { /* ignora */ }
+    }
+  };
+
+  const handleSelectVentas = (nombre) => {
+    setArchivoVentasSeleccionado(nombre);
+    const saved = localStorage.getItem(`looper_colmap_${nombre}`);
+    if (saved) {
+      try { setVentasColumnMap(JSON.parse(saved)); } catch (_) { /* ignora */ }
+    }
+  };
+
   return (
+    <>
     <div className="p-10 w-full">
       <header className="mb-6">
         <h1 className="text-2xl font-bold text-neutral-800">Crear Reporte</h1>
@@ -326,14 +520,44 @@ const handleProcesar = async () => {
 
       <div className="flex w-full gap-6 min-h-[calc(100vh-10rem)]">
         <Panel title="1. Cargar Archivos" collapsed={!mostrarCargar} setCollapsed={(v) => setMostrarCargar(!v)} Icon={SquareArrowUp}>
-            <div className="space-y-4">
+            <div className="space-y-3">
                 <label className="block font-semibold text-sm">Matriz de Materiales:</label>
-                <input type="file" onChange={(e) => handleFileUpload(e, "matriz")} className="w-full text-sm p-3 bg-gray-100 rounded-lg" />
+                <input type="file" accept=".xlsx,.xls" onChange={(e) => handleFileUpload(e, "matriz")} className="w-full text-sm p-3 bg-gray-100 rounded-lg" />
+                {archivoMatriz && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {Object.keys(matrizColumnMap).length > 0 ? (
+                      <span className="text-xs text-green-600 font-medium">✓ Columnas configuradas</span>
+                    ) : (
+                      <span className="text-xs text-yellow-600 font-medium">⚠ Sin configurar columnas</span>
+                    )}
+                    <button
+                      onClick={() => setShowMapModal("matriz")}
+                      className="text-xs text-primary underline hover:text-green-800"
+                    >
+                      {Object.keys(matrizColumnMap).length > 0 ? "Editar mapeo" : "Configurar columnas"}
+                    </button>
+                  </div>
+                )}
                 <button disabled={!archivoMatriz} className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-green-700 disabled:bg-gray-400" onClick={() => subirArchivoAzure(archivoMatriz, "matriz")}>Subir Matriz</button>
             </div>
-            <div className="space-y-4 mt-6">
+            <div className="space-y-3 mt-6">
                 <label className="block font-semibold text-sm">Registro de Ventas:</label>
-                <input type="file" onChange={(e) => handleFileUpload(e, "ventas")} className="w-full text-sm p-3 bg-gray-100 rounded-lg" />
+                <input type="file" accept=".xlsx,.xls" onChange={(e) => handleFileUpload(e, "ventas")} className="w-full text-sm p-3 bg-gray-100 rounded-lg" />
+                {archivoVentas && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {Object.keys(ventasColumnMap).length > 0 ? (
+                      <span className="text-xs text-green-600 font-medium">✓ Columnas configuradas</span>
+                    ) : (
+                      <span className="text-xs text-yellow-600 font-medium">⚠ Sin configurar columnas</span>
+                    )}
+                    <button
+                      onClick={() => setShowMapModal("ventas")}
+                      className="text-xs text-primary underline hover:text-green-800"
+                    >
+                      {Object.keys(ventasColumnMap).length > 0 ? "Editar mapeo" : "Configurar columnas"}
+                    </button>
+                  </div>
+                )}
                 <div className="flex gap-4">
                     <select onChange={(e) => setMes(e.target.value)} value={mes} className="w-full bg-gray-100 p-3 text-sm rounded-lg">
                         <option value="">Mes</option>
@@ -348,19 +572,29 @@ const handleProcesar = async () => {
         </Panel>
 
         <Panel title="2. Seleccionar Archivos" collapsed={!mostrarSeleccion} setCollapsed={(v) => setMostrarSeleccion(!v)} Icon={ListChecks}>
-            <div className="space-y-4">
+            <div className="space-y-2">
                 <label className="block font-semibold text-sm">Matriz de Materiales:</label>
-                <select onChange={(e) => setArchivoMatrizSeleccionado(e.target.value)} value={archivoMatrizSeleccionado} className={`w-full bg-gray-100 p-3 text-sm rounded-lg transition-all ${destacarMatriz ? "border-2 border-primary" : ""}`}>
+                <select onChange={(e) => handleSelectMatriz(e.target.value)} value={archivoMatrizSeleccionado} className={`w-full bg-gray-100 p-3 text-sm rounded-lg transition-all ${destacarMatriz ? "border-2 border-primary" : ""}`}>
                     <option value="">Selecciona un archivo</option>
                     {matrizArchivos.map((file) => <option key={file.id || file.nombre} value={file.nombre}>{file.nombre}</option>)}
                 </select>
+                {archivoMatrizSeleccionado && (
+                  <p className={`text-xs font-medium ${Object.keys(matrizColumnMap).length > 0 ? "text-green-600" : "text-yellow-600"}`}>
+                    {Object.keys(matrizColumnMap).length > 0 ? "✓ Mapeo de columnas cargado" : "⚠ Sin mapeo (se usarán nombres de columna exactos)"}
+                  </p>
+                )}
             </div>
-            <div className="space-y-4 mt-4">
+            <div className="space-y-2 mt-4">
                 <label className="block font-semibold text-sm">Registro de Ventas:</label>
-                <select onChange={(e) => setArchivoVentasSeleccionado(e.target.value)} value={archivoVentasSeleccionado} className={`w-full bg-gray-100 p-3 text-sm rounded-lg transition-all ${destacarVentas ? "border-2 border-primary" : ""}`}>
+                <select onChange={(e) => handleSelectVentas(e.target.value)} value={archivoVentasSeleccionado} className={`w-full bg-gray-100 p-3 text-sm rounded-lg transition-all ${destacarVentas ? "border-2 border-primary" : ""}`}>
                     <option value="">Selecciona un archivo</option>
                     {ventasArchivos.map((file) => <option key={file.id || file.nombre} value={file.nombre}>{file.nombre}{file.periodo ? ` - ${file.periodo}` : ""}</option>)}
                 </select>
+                {archivoVentasSeleccionado && (
+                  <p className={`text-xs font-medium ${Object.keys(ventasColumnMap).length > 0 ? "text-green-600" : "text-yellow-600"}`}>
+                    {Object.keys(ventasColumnMap).length > 0 ? "✓ Mapeo de columnas cargado" : "⚠ Sin mapeo (se usarán nombres de columna exactos)"}
+                  </p>
+                )}
             </div>
         </Panel>
 
@@ -614,6 +848,25 @@ const handleProcesar = async () => {
         </Panel>
       </div>
     </div>
+
+    {/* ─── Modal de mapeo de columnas ───────────────────────────────────────── */}
+    {showMapModal === "matriz" && (
+      <ColumnMapperModal
+        tipo="matriz"
+        columns={matrizColumns}
+        onConfirm={(mapping) => handleConfirmMapping("matriz", mapping)}
+        onCancel={() => setShowMapModal(null)}
+      />
+    )}
+    {showMapModal === "ventas" && (
+      <ColumnMapperModal
+        tipo="ventas"
+        columns={ventasColumns}
+        onConfirm={(mapping) => handleConfirmMapping("ventas", mapping)}
+        onCancel={() => setShowMapModal(null)}
+      />
+    )}
+    </>
   );
 };
 
