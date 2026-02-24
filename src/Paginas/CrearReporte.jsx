@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { FolderUp, SquareArrowUp, ListChecks, FileCog } from "lucide-react";
+import { FolderUp, SquareArrowUp, ListChecks, FileCog, AlertTriangle } from "lucide-react";
 import { FaFileDownload } from "react-icons/fa";
 import { TbBrowserMaximize } from "react-icons/tb";
 import { AuthContext } from "../context/AuthContext";
@@ -118,6 +118,43 @@ const ColumnMapperModal = ({ tipo, columns, onConfirm, onCancel }) => {
   );
 };
 
+const ProcessingErrorModal = ({ messages, onClose }) => (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+      <div className="px-6 pt-6 pb-2 border-b border-red-100">
+        <div className="flex items-center gap-3">
+          <div className="bg-red-100 p-2 rounded-full">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-800">No se pudo completar el procesamiento</h3>
+        </div>
+        <p className="text-sm text-gray-500 mt-2">
+          Se detectaron los siguientes problemas con los archivos utilizados:
+        </p>
+      </div>
+      <ul className="px-6 py-4 space-y-2">
+        {messages.map((msg, i) => (
+          <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+            <span className="text-red-500 mt-0.5 flex-shrink-0">•</span>
+            {msg}
+          </li>
+        ))}
+      </ul>
+      <p className="px-6 pb-2 text-xs text-gray-400">
+        Revisá el mapeo de columnas o los archivos cargados e intentá nuevamente.
+      </p>
+      <div className="px-6 py-4 border-t border-gray-100 flex justify-end">
+        <button
+          onClick={onClose}
+          className="px-5 py-2 bg-primary text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+        >
+          Entendido
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
 const Panel = ({ title, collapsed, setCollapsed, Icon, children }) => {
   return (
     <div
@@ -193,6 +230,7 @@ const CrearReporte = () => {
   const userId = user?.id;
   const [procesando, setProcesando] = useState(false);
   const [gransicId, setGransicId] = useState(null);
+  const [processingError, setProcessingError] = useState(null); // null | { messages: [] }
 
   // ─── Mapeo de columnas ───────────────────────────────────────────────────────
   const [matrizColumns,   setMatrizColumns]   = useState([]);   // columnas leídas del Excel
@@ -271,6 +309,7 @@ const CrearReporte = () => {
     reader.onload = async () => {
       const base64 = reader.result.split(",")[1];
       const fileName = archivo.file.name;
+      const columnMap = tipo === "matriz" ? matrizColumnMap : ventasColumnMap;
       const payload = {
         tipo,
         id_usuario: String(userId),
@@ -278,6 +317,7 @@ const CrearReporte = () => {
         nombre_archivo: fileName.substring(0, fileName.lastIndexOf(".")) || fileName,
         extension: "." + fileName.split(".").pop(),
         base64,
+        ...(Object.keys(columnMap).length > 0 && { column_map: columnMap }),
       };
       try {
         const res = await fetch(`${API_GESTREPORT}/subirArchivo`, {
@@ -411,7 +451,20 @@ const handleProcesar = async () => {
     });
 
     if (!res.ok) {
-      const errorText = await res.text();
+      const errorText = await res.text(); // leer el body una sola vez
+      let errorMessages = null;
+      try {
+        const errBody = JSON.parse(errorText);
+        if (errBody.processingError && errBody.messages?.length) {
+          errorMessages = errBody.messages;
+        }
+      } catch (_) {}
+
+      if (errorMessages) {
+        setProcessingError({ messages: errorMessages });
+        setProcesando(false);
+        return;
+      }
       throw new Error(`Error HTTP ${res.status}: ${errorText}`);
     }
 
@@ -496,17 +549,31 @@ const handleProcesar = async () => {
   // Al seleccionar un archivo del dropdown, intenta cargar su mapeo guardado
   const handleSelectMatriz = (nombre) => {
     setArchivoMatrizSeleccionado(nombre);
-    const saved = localStorage.getItem(`looper_colmap_${nombre}`);
-    if (saved) {
-      try { setMatrizColumnMap(JSON.parse(saved)); } catch (_) { /* ignora */ }
+    const file = matrizArchivos.find(f => f.nombre === nombre);
+    if (file?.column_map && Object.keys(file.column_map).length > 0) {
+      setMatrizColumnMap(file.column_map);
+    } else {
+      const saved = localStorage.getItem(`looper_colmap_${nombre}`);
+      if (saved) {
+        try { setMatrizColumnMap(JSON.parse(saved)); } catch (_) { /* ignora */ }
+      } else {
+        setMatrizColumnMap({});
+      }
     }
   };
 
   const handleSelectVentas = (nombre) => {
     setArchivoVentasSeleccionado(nombre);
-    const saved = localStorage.getItem(`looper_colmap_${nombre}`);
-    if (saved) {
-      try { setVentasColumnMap(JSON.parse(saved)); } catch (_) { /* ignora */ }
+    const file = ventasArchivos.find(f => f.nombre === nombre);
+    if (file?.column_map && Object.keys(file.column_map).length > 0) {
+      setVentasColumnMap(file.column_map);
+    } else {
+      const saved = localStorage.getItem(`looper_colmap_${nombre}`);
+      if (saved) {
+        try { setVentasColumnMap(JSON.parse(saved)); } catch (_) { /* ignora */ }
+      } else {
+        setVentasColumnMap({});
+      }
     }
   };
 
@@ -848,6 +915,14 @@ const handleProcesar = async () => {
         </Panel>
       </div>
     </div>
+
+    {/* ─── Modal de error de procesamiento ──────────────────────────────────── */}
+    {processingError && (
+      <ProcessingErrorModal
+        messages={processingError.messages}
+        onClose={() => setProcessingError(null)}
+      />
+    )}
 
     {/* ─── Modal de mapeo de columnas ───────────────────────────────────────── */}
     {showMapModal === "matriz" && (

@@ -15,7 +15,7 @@ export default defineConfig({
         }
       },
       '/api-procesar': {
-        target: 'https://looperapp.azurewebsites.net',
+        target: 'http://localhost:7074',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api-procesar/, '/api'),
         headers: {
