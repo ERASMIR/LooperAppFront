@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext.jsx";
-import { API_GESTDOC } from "../config/api";
+import { API_GESTDOC, API_GESTREPORT } from "../config/api";
+import { Pencil, Eye } from "lucide-react";
 
 
 // Encabezado de columna con handle de redimensionado
@@ -36,6 +37,8 @@ const GestDoc = ({ sidebarCollapsed }) => {
   const [urlPreview, setUrlPreview] = useState("");
   const [tablaColapsada, setTablaColapsada] = useState(false);
   const [colWidths, setColWidths] = useState({});  // anchos de columna en px (override del % por defecto)
+  const [loadingDeclaracion, setLoadingDeclaracion] = useState({});
+  const declaracionInputRefs = useRef({});
   const resizeState = useRef(null);
 
   // Devuelve el ancho de la columna: px si fue redimensionada, % por defecto
@@ -316,6 +319,47 @@ const GestDoc = ({ sidebarCollapsed }) => {
     }
 
     setUrlPreview(previewUrl);
+    setTablaColapsada(true);
+  };
+
+  const handleSubirDeclaracion = async (archivoId, file) => {
+    if (!file) return;
+    setLoadingDeclaracion((prev) => ({ ...prev, [archivoId]: true }));
+    try {
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const res = await fetch(`${API_GESTREPORT}/subirDeclaracion`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_reporte: archivoId,
+          id_usuario: user.id,
+          empresa_id: user.empresaId,
+          nombre_archivo: file.name.replace(/\.pdf$/i, ''),
+          base64,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Error HTTP: ${res.status}`);
+
+      setArchivos((prev) =>
+        prev.map((a) =>
+          a.id === archivoId ? { ...a, url_declaracion: data.url_declaracion } : a
+        )
+      );
+      alert('✅ Declaración subida correctamente.');
+    } catch (error) {
+      console.error('Error al subir declaración:', error);
+      alert('❌ No se pudo subir la declaración: ' + error.message);
+    } finally {
+      setLoadingDeclaracion((prev) => ({ ...prev, [archivoId]: false }));
+    }
   };
 
   // ---------- Render ----------
@@ -363,14 +407,14 @@ const GestDoc = ({ sidebarCollapsed }) => {
               <tr className="text-left">
                 {tipoArchivo === "reportes" ? (
                   <>
-                    <Th colKey="nombre"    width={getW("nombre",    "24%")} onResize={startResize}>Nombre</Th>
-                    <Th colKey="fecha"     width={getW("fecha",     "16%")} onResize={startResize}>Fecha</Th>
-                    <Th colKey="anio"      width={getW("anio",      "6%")}  onResize={startResize}>Año</Th>
-                    <Th colKey="mes"       width={getW("mes",       "6%")}  onResize={startResize}>Mes</Th>
+                    <Th colKey="nombre"       width={getW("nombre",       "12%")} onResize={startResize}>Nombre</Th>
+                    <Th colKey="fecha"        width={getW("fecha",        "16%")} onResize={startResize}>Fecha</Th>
+                    <Th colKey="anio"         width={getW("anio",         "6%")}  onResize={startResize}>Año</Th>
+                    <Th colKey="mes"          width={getW("mes",          "6%")}  onResize={startResize}>Mes</Th>
                     {(rol === "admin" || rol === "dev") && <Th colKey="usuario" width={getW("usuario", "12%")} onResize={startResize}>Usuario</Th>}
-                    <Th colKey="ver"       width={getW("ver",       "7%")}  onResize={startResize}>Ver</Th>
-                    <Th colKey="descargar" width={getW("descargar", "14%")} onResize={startResize}>Descargar</Th>
-                    <Th colKey="eliminar"  width={getW("eliminar",  "14%")} onResize={startResize}>Eliminar</Th>
+                    <Th colKey="descargar"    width={getW("descargar",    "14%")} onResize={startResize}>Reporte</Th>
+                    <Th colKey="declaracion"  width={getW("declaracion",  "14%")} onResize={startResize}>Declaración</Th>
+                    <Th colKey="eliminar"     width={getW("eliminar",     "10%")} onResize={startResize}>Eliminar</Th>
                   </>
                 ) : tipoArchivo === "ventas" ? (
                   <>
@@ -411,8 +455,48 @@ const GestDoc = ({ sidebarCollapsed }) => {
                     <td className="p-3">{archivo.periodo_anio ?? archivo.anio ?? "-"}</td>
                     <td className="p-3">{archivo.periodo_mes ?? archivo.mes ?? "-"}</td>
                     {(rol === "admin" || rol === "dev") && <td className="p-3 truncate">{archivo.usuario_nombre ?? "-"}</td>}
-                    <td className="p-3"><button onClick={() => handleVerArchivo(archivo)} className="px-3 py-1 bg-primary text-white rounded hover:bg-primary-light">Ver</button></td>
-                    <td className="p-3"><a href={archivo.url_web ?? archivo.url_carga ?? archivo.url} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-primary text-white rounded hover:bg-primary-light">Descargar</a></td>
+                    <td className="p-3">
+                      <div className="flex items-center gap-2">
+                        <a href={archivo.url_web ?? archivo.url_carga ?? archivo.url} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-primary text-white rounded hover:bg-primary-light text-sm">Descargar</a>
+                        <button
+                          onClick={() => handleVerArchivo(archivo)}
+                          className="p-1 border border-primary text-primary bg-white rounded hover:bg-primary hover:text-white transition"
+                          title="Vista previa"
+                        >
+                          <Eye size={14} />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="p-3">
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        className="hidden"
+                        ref={(el) => { declaracionInputRefs.current[archivo.id] = el; }}
+                        onChange={(e) => handleSubirDeclaracion(archivo.id, e.target.files?.[0])}
+                      />
+                      {archivo.url_declaracion ? (
+                        <div className="flex items-center gap-2">
+                          <a href={archivo.url_declaracion} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-primary text-white rounded hover:bg-primary-light text-sm">Descargar</a>
+                          <button
+                            disabled={!!loadingDeclaracion[archivo.id]}
+                            onClick={() => declaracionInputRefs.current[archivo.id]?.click()}
+                            className="p-1 border border-primary text-primary bg-white rounded hover:bg-primary hover:text-white transition disabled:opacity-50"
+                            title="Reemplazar declaración"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          disabled={!!loadingDeclaracion[archivo.id]}
+                          onClick={() => declaracionInputRefs.current[archivo.id]?.click()}
+                          className="px-3 py-1 border border-primary text-primary rounded hover:bg-primary hover:text-white text-sm disabled:opacity-50"
+                        >
+                          {loadingDeclaracion[archivo.id] ? 'Subiendo...' : 'Cargar'}
+                        </button>
+                      )}
+                    </td>
                     <td className="p-3"><button onClick={() => handleEliminar(archivo.id)} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">Eliminar</button></td>
                   </tr>
                 ))
@@ -449,34 +533,38 @@ const GestDoc = ({ sidebarCollapsed }) => {
         </div>
       </div>
 
-      {/* ── Panel derecho: vista previa (siempre visible, ancho fijo pequeño) ─ */}
-      <div className={`flex-shrink-0 flex flex-col bg-white border-l border-gray-200 p-4 overflow-hidden transition-all duration-300
-        ${tablaColapsada ? "flex-1" : "w-72"}`}>
+      {/* ── Panel derecho: vista previa ─ */}
+      <div className={`flex-shrink-0 flex flex-col bg-white border-l border-gray-200 overflow-hidden transition-all duration-300
+        ${tablaColapsada ? "flex-1 p-4" : "w-0"}`}>
 
-        <div className="flex items-center gap-2 mb-3 flex-shrink-0">
-          <button
-            onClick={() => setTablaColapsada((v) => !v)}
-            className="text-primary hover:text-green-800 text-xs bg-white border border-primary rounded-full w-7 h-7 flex items-center justify-center shadow flex-shrink-0"
-            title={tablaColapsada ? "Mostrar listado" : "Ampliar vista previa"}
-          >
-            <span className="text-sm font-bold">{tablaColapsada ? ">>" : "<<"}</span>
-          </button>
-          <h2 className="text-base font-bold text-neutral-800 truncate">Vista Previa</h2>
-        </div>
-
-        <div className="flex-1 min-h-0 w-full overflow-hidden">
-          {urlPreview ? (
-            <iframe
-              src={urlPreview}
-              title="Vista previa del archivo"
-              className="w-full h-full rounded-xl border"
-            />
-          ) : (
-            <div className="w-full h-full rounded-xl border bg-gray-100 flex items-center justify-center text-gray-400 text-xs text-center px-2">
-              Selecciona "Ver" en un archivo para previsualizarlo.
+        {tablaColapsada && (
+          <>
+            <div className="flex items-center gap-2 mb-3 flex-shrink-0">
+              <button
+                onClick={() => { setTablaColapsada(false); setUrlPreview(''); }}
+                className="text-primary hover:text-green-800 text-xs bg-white border border-primary rounded-full w-7 h-7 flex items-center justify-center shadow flex-shrink-0"
+                title="Cerrar vista previa"
+              >
+                <span className="text-sm font-bold">{">>"}</span>
+              </button>
+              <h2 className="text-base font-bold text-neutral-800 truncate">Vista Previa</h2>
             </div>
-          )}
-        </div>
+
+            <div className="flex-1 min-h-0 w-full overflow-hidden">
+              {urlPreview ? (
+                <iframe
+                  src={urlPreview}
+                  title="Vista previa del archivo"
+                  className="w-full h-full rounded-xl border"
+                />
+              ) : (
+                <div className="w-full h-full rounded-xl border bg-gray-100 flex items-center justify-center text-gray-400 text-xs text-center px-2">
+                  Selecciona "Ver" en un archivo para previsualizarlo.
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
     </div>

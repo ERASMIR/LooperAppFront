@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api-usuarios': {
-        target: 'http://localhost:7071',
+        target: 'https://looper-usuarios.azurewebsites.net',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api-usuarios/, '/api'),
         headers: {
@@ -15,7 +15,7 @@ export default defineConfig({
         }
       },
       '/api-procesar': {
-        target: 'http://localhost:7074',
+        target: 'https://looperapp.azurewebsites.net',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api-procesar/, '/api'),
         headers: {
