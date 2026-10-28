@@ -16,3 +16,13 @@ export const API_PROCESAR = isProd
   ? 'https://looperapp.azurewebsites.net/api'
   
   : '/api-procesar';
+
+// Matriz de Materiales (Function looper-materiales; el recurso en Azure aún no existe)
+export const API_MATERIALES = isProd
+  ? 'https://looper-materiales.azurewebsites.net/api'
+  : '/api-materiales';
+
+// Registro de Ventas (Function looper-ventas; el recurso en Azure aún no existe)
+export const API_VENTAS = isProd
+  ? 'https://looper-ventas.azurewebsites.net/api'
+  : '/api-ventas';

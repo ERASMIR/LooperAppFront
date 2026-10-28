@@ -7,6 +7,8 @@ import {
   ChevronsLeft,
   ChevronsRight,
   LifeBuoy, // Importa el nuevo icono
+  Boxes,
+  ShoppingCart,
 } from "lucide-react";
 import { FaChartColumn } from "react-icons/fa6";
 
@@ -23,6 +25,34 @@ const Sidebar = ({ collapsed, toggleCollapse }) => (
     </div>
 
     <nav className="flex flex-col gap-3 px-4 text-xl font-medium">
+      <NavLink
+        to="/matriz-materiales"
+        className={({ isActive }) =>
+          `flex items-center gap-2 px-3 py-2 rounded-md transition-all border
+          ${isActive
+            ? "bg-primary text-white border-transparent"
+            : "bg-white text-primary border-gray-200"}
+          hover:bg-primary-light hover:text-primary hover:border-gray-300`
+        }
+      >
+        <Boxes className={`${collapsed ? "w-7 h-7" : "w-4 h-4"} transition-all`} />
+        {!collapsed && "Matriz de Materiales"}
+      </NavLink>
+
+      <NavLink
+        to="/registro-ventas"
+        className={({ isActive }) =>
+          `flex items-center gap-2 px-3 py-2 rounded-md transition-all border
+          ${isActive
+            ? "bg-primary text-white border-transparent"
+            : "bg-white text-primary border-gray-200"}
+          hover:bg-primary-light hover:text-primary hover:border-gray-300`
+        }
+      >
+        <ShoppingCart className={`${collapsed ? "w-7 h-7" : "w-4 h-4"} transition-all`} />
+        {!collapsed && "Registro de Ventas"}
+      </NavLink>
+
       <NavLink
         to="/crear-reporte"
         className={({ isActive }) =>

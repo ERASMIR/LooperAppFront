@@ -18,6 +18,8 @@ import Dashboard from './Paginas/DashBoard';
 import Ecologica from './Paginas/ValidEcologica';
 import PrivateRoute from './Componentes/PrivateRoute';
 import GestionUsuarios from './Paginas/GestionUsuarios';
+import MatrizMateriales from './Paginas/MatrizMateriales';
+import RegistroVentas from './Paginas/RegistroVentas';
 
 // Layout principal de la aplicación
 function Layout({ children }) {
@@ -66,6 +68,8 @@ function App() {
 
           {/* Rutas protegidas */}
           <Route path="/inicio" element={<PrivateRoute><Home /></PrivateRoute>} />
+          <Route path="/matriz-materiales" element={<PrivateRoute><MatrizMateriales /></PrivateRoute>} />
+          <Route path="/registro-ventas" element={<PrivateRoute><RegistroVentas /></PrivateRoute>} />
           <Route path="/crear-reporte" element={<PrivateRoute><CrearReporte /></PrivateRoute>} />
           <Route path="/gestion-archivos" element={<PrivateRoute><GestDoc /></PrivateRoute>} />
           <Route path="/tutoriales" element={<PrivateRoute><Tutoriales /></PrivateRoute>} />
