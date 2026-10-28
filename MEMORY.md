@@ -82,3 +82,19 @@ Lo transversal (BD, entorno, decisiones que cruzan servicios) va en `../MEMORY.m
   Corregido: una asignación recordada que apuntaba a un campo que ya no existe vuelve a proponer la columna (antes se perdía).
   Pendiente: gestionar campos de ventas (renombrar/eliminar; el endpoint existe), columnas configurables, RUT con puntos,
   marcar "a granel" en unidades existentes desde la UI (hoy solo al crear; el endpoint PUT existe).
+- 2026-10-28 (T9.5a, T9.7 y T9.8 fase 1, front simulado): gestor de columnas común (`columnasTabla.jsx` + `useVistaTabla.js`,
+  opción `oculta`), usado por la Matriz y Ventas. `FormularioVenta.jsx` (nueva/editar venta, sugerencia de razón social por RUT,
+  crear campo adicional). Documentos Factura/Guía/Boleta/Pedido en `ventasRevision.js` (folio entero, al menos uno, venta repetida
+  = error, `clasificarCoincidencias` para Combinar por documento, `revisarVentaManual`). `RegistroVentas.jsx`: acciones por fila
+  (REP solo lo suyo), filas dudosas, "Última modificación", bloqueo del periodo; **`SIMULADO = true`** (quitar en la fase 4).
+  Corregido: al cambiar rápido de periodo, una respuesta tardía pisaba la del periodo elegido. Pruebas: `../specs/002-registro-ventas/pruebas/03_*` y `04_*`.
+- 2026-10-28 (T9.7/T9.8 conectado): sin `SIMULADO`. RegistroVentas usa POST/PUT/DELETE `ventas`, `ventas/revisarDocumentos`
+  (formulario con espera de 400 ms y revisión de la carga) y `clientes` (sugerencia por RUT, 300 ms). Bloqueo real desde
+  `GET ventas` (`bloqueado`). Probado en navegador (dic-2025, archivo `../specs/002-registro-ventas/pruebas/05_*`).
+- 2026-10-28 (T8.6 fase 1, front simulado): `src/Paginas/ReportePeriodo.jsx` = nueva "Crear Reporte" (`/crear-reporte`):
+  periodo → Procesar (vista previa con resumen y toneladas por material, filtros por categoría) → Confirmar (bloquea) /
+  Eliminar reporte vigente (admin/dev, motivo). `SIMULADO = true` (toneladas ficticias, reporte en memoria). La pantalla
+  anterior por archivos (`CrearReporte.jsx`) quedó en `/crear-reporte-archivos` solo para dev hasta validar.
+- 2026-10-28: **corregido (con OK de la persona) error de producción: recargar la página cerraba la sesión.** `AuthContext.jsx`
+  leía la sesión de localStorage en un `useEffect`, y `PrivateRoute` redirigía al login antes. Ahora se lee en el estado
+  inicial. ReportePeriodo: historial de reportes (vigentes y eliminados) con "Ver".

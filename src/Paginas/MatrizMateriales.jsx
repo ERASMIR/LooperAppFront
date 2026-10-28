@@ -2,9 +2,10 @@ import React, { useCallback, useContext, useEffect, useMemo, useState } from "re
 import { AuthContext } from "../context/AuthContext.jsx";
 import { API_MATERIALES } from "../config/api";
 import CargaMasivaMatriz from "../Componentes/CargaMasivaMatriz.jsx";
+import { EncabezadoAjustable, ModalColumnas } from "../Componentes/columnasTabla.jsx";
+import { useVistaTabla } from "../Componentes/useVistaTabla.js";
 import {
-  Plus, X, Trash2, Search, Paperclip, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, Pencil, Loader2,
-  Columns3, Lock, RotateCcw,
+  Plus, X, Trash2, Search, Paperclip, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, Pencil, Loader2, Columns3,
 } from "lucide-react";
 
 // ── Constantes ────────────────────────────────────────────────────────────────
@@ -346,75 +347,15 @@ const ModalGestionarCampos = ({ campos, onRenombrar, onEliminar, onCerrar }) => 
 };
 
 // ── Pestaña: listado de productos ─────────────────────────────────────────────
-// Vista configurable por usuario y empresa (columnas visibles y anchos), guardada en el navegador.
-const ANCHO_MIN = 80;
 const ANCHO_DETALLE = 40;
 const ANCHO_ACCIONES = 96;
-
-const leerVista = (clave) => {
-  try {
-    const v = JSON.parse(localStorage.getItem(clave));
-    return { visibles: v?.visibles || {}, anchos: v?.anchos || {} };
-  } catch {
-    return { visibles: {}, anchos: {} };
-  }
-};
-
-// Ventana para elegir las columnas visibles. Las fijas aparecen marcadas y bloqueadas.
-const ModalColumnas = ({ columnas, esVisible, onCambiar, onRestablecer, onCerrar }) => {
-  const grupos = [
-    ["Datos del producto", columnas.filter((c) => !c.campo)],
-    ["Información adicional", columnas.filter((c) => c.campo)],
-  ];
-  return (
-    <Modal titulo="Columnas de la tabla" onCerrar={onCerrar}>
-      <p className="text-sm text-neutral-500 mb-3">Elige qué columnas ver. Para cambiar el ancho, arrastra el borde derecho del encabezado.</p>
-      <div className="max-h-96 overflow-y-auto space-y-4">
-        {grupos.map(([titulo, lista]) => (
-          <div key={titulo}>
-            <p className="font-semibold text-sm text-neutral-700 mb-1">{titulo}</p>
-            {lista.length === 0 && <p className="text-sm text-neutral-500">La empresa no tiene campos adicionales.</p>}
-            {lista.map((c) => (
-              <label key={c.id} className={`flex items-center gap-2 py-1 text-sm ${c.fija ? "text-neutral-500" : "cursor-pointer"}`}>
-                <input
-                  type="checkbox"
-                  checked={esVisible(c)}
-                  disabled={c.fija}
-                  onChange={(e) => onCambiar(c.id, e.target.checked)}
-                  className="w-4 h-4 accent-primary"
-                />
-                <span className="flex-1">{c.label}</span>
-                {c.fija && <Lock className="w-3.5 h-3.5" aria-label="Columna fija" />}
-              </label>
-            ))}
-          </div>
-        ))}
-      </div>
-      <div className="flex justify-between gap-3 mt-6">
-        <button onClick={onRestablecer} className="flex items-center gap-1 text-sm text-primary hover:text-green-800">
-          <RotateCcw className="w-4 h-4" /> Restablecer vista
-        </button>
-        <button onClick={onCerrar} className="bg-primary text-white px-5 py-2 rounded-lg hover:bg-green-700">Listo</button>
-      </div>
-    </Modal>
-  );
-};
 
 const ListadoProductos = ({
   productos, tienePeligrosidad, subcategorias, puedeEditar, onEditar, onEliminar, campos, camposComponente, claveVista,
 }) => {
   const [busqueda, setBusqueda] = useState("");
   const [abierto, setAbierto] = useState(null);
-  const [vista, setVista] = useState(() => leerVista(claveVista));
   const [editandoColumnas, setEditandoColumnas] = useState(false);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(claveVista, JSON.stringify(vista));
-    } catch {
-      // Sin almacenamiento en el navegador: la tabla sigue con la vista en memoria.
-    }
-  }, [claveVista, vista]);
 
   // ancho: por defecto (px). render(p): contenido de la celda.
   const columnas = [
@@ -465,35 +406,10 @@ const ListadoProductos = ({
     })),
   ];
 
-  // Lo no guardado usa el valor por defecto: columnas base visibles, campos adicionales ocultos.
-  const esVisible = (c) => c.fija || (vista.visibles[c.id] ?? !c.campo);
-  const visibles = columnas.filter(esVisible);
-  const anchoDe = (c) => vista.anchos[c.id] ?? c.ancho;
+  const vistaTabla = useVistaTabla(claveVista, columnas);
+  const { visibles, anchoDe } = vistaTabla;
   const anchoTabla = ANCHO_DETALLE + visibles.reduce((acc, c) => acc + anchoDe(c), 0) + (puedeEditar ? ANCHO_ACCIONES : 0);
   const totalColumnas = visibles.length + 1 + (puedeEditar ? 1 : 0);
-
-  const cambiarVisible = (id, valor) => setVista((v) => ({ ...v, visibles: { ...v.visibles, [id]: valor } }));
-
-  // Arrastrar el borde derecho del encabezado cambia el ancho de la columna (doble clic: ancho por defecto).
-  const iniciarAjuste = (e, c) => {
-    e.preventDefault();
-    const inicioX = e.clientX;
-    const inicio = anchoDe(c);
-    const mover = (ev) => {
-      const ancho = Math.max(ANCHO_MIN, Math.round(inicio + ev.clientX - inicioX));
-      setVista((v) => ({ ...v, anchos: { ...v.anchos, [c.id]: ancho } }));
-    };
-    const soltar = () => {
-      document.removeEventListener("mousemove", mover);
-      document.removeEventListener("mouseup", soltar);
-      document.body.style.cursor = "";
-    };
-    document.addEventListener("mousemove", mover);
-    document.addEventListener("mouseup", soltar);
-    document.body.style.cursor = "col-resize";
-  };
-  const anchoPorDefecto = (c) =>
-    setVista((v) => ({ ...v, anchos: Object.fromEntries(Object.entries(v.anchos).filter(([id]) => id !== c.id)) }));
 
   const filtrados = productos.filter((p) =>
     `${p.sku} ${p.descripcion}`.toLowerCase().includes(busqueda.trim().toLowerCase())
@@ -529,17 +445,7 @@ const ListadoProductos = ({
           <thead className="bg-gray-100 text-left">
             <tr>
               <th className="p-3"></th>
-              {visibles.map((c) => (
-                <th key={c.id} className="p-3 relative align-bottom">
-                  <span className="block break-words">{c.label}</span>
-                  <span
-                    onMouseDown={(e) => iniciarAjuste(e, c)}
-                    onDoubleClick={() => anchoPorDefecto(c)}
-                    title="Arrastra para cambiar el ancho (doble clic: ancho original)"
-                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize border-r border-gray-300 hover:bg-green-200"
-                  />
-                </th>
-              ))}
+              {visibles.map((c) => <EncabezadoAjustable key={c.id} columna={c} vistaTabla={vistaTabla} />)}
               {puedeEditar && <th className="p-3"></th>}
             </tr>
           </thead>
@@ -641,9 +547,8 @@ const ListadoProductos = ({
       {editandoColumnas && (
         <ModalColumnas
           columnas={columnas}
-          esVisible={esVisible}
-          onCambiar={cambiarVisible}
-          onRestablecer={() => setVista({ visibles: {}, anchos: {} })}
+          vistaTabla={vistaTabla}
+          tituloDatos="Datos del producto"
           onCerrar={() => setEditandoColumnas(false)}
         />
       )}

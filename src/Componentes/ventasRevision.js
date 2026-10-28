@@ -72,6 +72,66 @@ export const fechaChilena = (iso) => {
   return m[4] === "00" && m[5] === "00" ? `${m[3]}/${m[2]}/${m[1]}` : `${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}`;
 };
 
+// ── Documentos de la venta (T9.7: specs/002-registro-ventas/documento-tributario.md) ──
+// Factura, Guía y Boleta son folios enteros; cada línea debe traer al menos uno. El pedido es texto y opcional.
+export const FOLIOS = [
+  { key: "folioFactura", label: "N° Factura", corto: "FAC" },
+  { key: "folioGuia", label: "N° Guía de despacho", corto: "GD" },
+  { key: "folioBoleta", label: "N° Boleta", corto: "BOL" },
+];
+export const PEDIDO = { key: "pedido", label: "N° Pedido / ID interno", corto: "PED" };
+export const DOCUMENTOS = [...FOLIOS, PEDIDO];
+export const MAX_PEDIDO = 100;
+
+// Folio del archivo o del formulario: entero > 0. Acepta 1234, "1234.0" (celda numérica de Excel) y "001234".
+// Devuelve el número, null si viene vacío o undefined si no es válido.
+export const leerFolio = (valor) => {
+  const t = String(valor ?? "").trim();
+  if (!t) return null;
+  if (!/^\d+(\.0+)?$/.test(t)) return undefined;
+  const n = Number(t.split(".")[0]);
+  return n > 0 && Number.isSafeInteger(n) ? n : undefined;
+};
+
+// Valida los documentos de una línea: { docs: { folioFactura, folioGuia, folioBoleta, pedido }, errores: [mensaje] }.
+export const validarDocumentos = (valores) => {
+  const docs = {};
+  const errores = [];
+  for (const d of FOLIOS) {
+    const n = leerFolio(valores[d.key]);
+    if (n === undefined) errores.push(`El ${d.label} ${citar(valores[d.key])} no es válido: debe ser un número entero mayor que 0 (ej.: 1234).`);
+    docs[d.key] = n ?? null;
+  }
+  const pedido = String(valores.pedido ?? "").trim();
+  if (pedido.length > MAX_PEDIDO) errores.push(`El ${PEDIDO.label} supera ${MAX_PEDIDO} caracteres.`);
+  docs.pedido = pedido || null;
+  if (!errores.length && FOLIOS.every((d) => docs[d.key] === null)) {
+    errores.push("Falta el documento: indica al menos el N° de factura, de guía de despacho o de boleta.");
+  }
+  return { docs, errores };
+};
+
+// "FAC 100 · GD 55 · PED A-77"
+export const textoDocumentos = (v) =>
+  DOCUMENTOS.filter((d) => v[d.key] !== null && v[d.key] !== undefined && v[d.key] !== "").map((d) => `${d.corto} ${v[d.key]}`).join(" · ");
+
+// Llave de duplicidad: mismos documentos + SKU + unidad + cantidad (vacío cuenta como valor).
+export const firmaVenta = (v) =>
+  [...DOCUMENTOS.map((d) => llave(v[d.key])), llave(v.sku), llave(v.unidad), String(v.cantidad)].join("|");
+
+// ¿Comparten algún número de documento del mismo tipo?
+export const compartenDocumento = (a, b) =>
+  DOCUMENTOS.some((d) => a[d.key] != null && b[d.key] != null && llave(a[d.key]) === llave(b[d.key]));
+
+// Documentos de la línea que ya están registrados en otros periodos de la empresa.
+// otros: [{ tipo, numero, anio, mes, skus }] (lo entrega el back; en la fase 1, simulado).
+export const documentosEnOtrosPeriodos = (v, otros) =>
+  otros.filter((o) => v[o.tipo] != null && llave(v[o.tipo]) === llave(o.numero));
+
+export const textoDudosa = (coincidencias) => coincidencias
+  .map((o) => `${DOCUMENTOS.find((d) => d.key === o.tipo).corto} ${o.numero} también está en ${nombrePeriodo(o)} (${o.skus.join(", ")})`)
+  .join(" · ");
+
 // ── Revisión ─────────────────────────────────────────────────────────────────
 /**
  * Revisa las filas leídas del archivo.
@@ -157,6 +217,9 @@ export const revisarVentas = ({ filas, asignacion, crear, base, periodo, product
       error(`La cantidad ${citar(v("cantidad"))} tiene decimales, pero la unidad "${unidadMatriz.unidad}" no es a granel: se vende en unidades enteras.`);
     }
 
+    const { docs, errores: erroresDocs } = validarDocumentos(Object.fromEntries(DOCUMENTOS.map((d) => [d.key, v(d.key)])));
+    erroresDocs.forEach(error);
+
     const valoresCampo = [];
     for (const c of columnasCampo) {
       const valor = (f.valores[c.col] || "").trim();
@@ -178,35 +241,140 @@ export const revisarVentas = ({ filas, asignacion, crear, base, periodo, product
       fecha: fechaIso(fecha),
       cantidad,
       unidad: unidadMatriz.unidad,
+      ...docs,
       camposAdicionales: valoresCampo,
     });
   }
+
+  // Duplicidad dentro del archivo: misma venta (documentos + SKU + unidad + cantidad) en dos filas.
+  const vistas = new Map();
+  const unicas = [];
+  for (const l of lineas) {
+    const primera = vistas.get(firmaVenta(l));
+    if (primera) {
+      errores.push({
+        fila: l.fila, sku: l.sku,
+        mensaje: `Venta repetida: la fila ${primera.fila} ya trae ${textoDocumentos(l)} con el mismo SKU, unidad y cantidad (${l.cantidad} ${l.unidad}).`,
+      });
+    } else {
+      vistas.set(firmaVenta(l), l);
+      unicas.push(l);
+    }
+  }
+  errores.sort((a, b) => a.fila - b.fila);
 
   const listaExcluidos = [...excluidos.values()].sort((a, b) => a.sku.localeCompare(b.sku, "es"));
   return {
     errores,
     excluidos: listaExcluidos,
     advertencias: [...advertencias.values()],
-    lineas,
+    lineas: unicas,
     resumen: {
       filas: filas.length,
-      validas: lineas.length,
+      validas: unicas.length,
       conError: new Set(errores.map((e) => e.fila)).size,
       excluidas: listaExcluidos.reduce((n, e) => n + e.filas, 0),
     },
   };
 };
 
-// Modo "combinar": SKU del archivo que ya tienen líneas en el periodo (se reemplazarán todas) → [{ sku, existentes, nuevas }].
-export const reemplazosPorSku = (lineas, existentes) => {
-  const nuevas = new Map();
-  for (const l of lineas) nuevas.set(llave(l.sku), { sku: l.sku, nuevas: (nuevas.get(llave(l.sku))?.nuevas || 0) + 1 });
-  const conteo = new Map();
-  for (const l of existentes) {
-    const k = llave(l.sku);
-    if (nuevas.has(k)) conteo.set(k, (conteo.get(k) || 0) + 1);
+// ── Ingreso manual (T9.8: specs/002-registro-ventas/ingreso-manual.md) ──
+/**
+ * Valida una venta del formulario con las mismas reglas de la carga masiva.
+ * @param valores   { fecha: "AAAA-MM-DD", hora: "hh:mm" | "", sku, unidad, cantidad, razonSocial, rut, folioFactura,
+ *                    folioGuia, folioBoleta, pedido }
+ * @param existentes ventas vigentes del periodo (para la duplicidad); idEditando: la venta que se edita (se excluye).
+ * @returns { errores: { campo: mensaje }, venta } — venta solo si no hay errores.
+ */
+export const revisarVentaManual = ({ valores, periodo, productos, unidades, existentes, idEditando }) => {
+  const errores = {};
+  const producto = productos.find((p) => llave(p.sku) === llave(valores.sku));
+  const unidadMatriz = producto?.unidades.find((u) => llave(u.unidad) === llave(valores.unidad));
+
+  const fecha = valores.fecha ? leerFecha(`${valores.fecha}${valores.hora ? ` ${valores.hora}` : ""}`) : null;
+  if (!valores.fecha) errores.fecha = "Indica la fecha de la venta.";
+  else if (!fecha) errores.fecha = "La fecha no es válida.";
+  else if (fecha.anio !== periodo.anio || fecha.mes !== periodo.mes) errores.fecha = `La fecha debe estar dentro de ${nombrePeriodo(periodo)}.`;
+
+  if (!producto) errores.sku = valores.sku ? "El SKU no existe en la Matriz de Materiales." : "Elige el SKU.";
+  else if (!unidadMatriz) errores.unidad = "Elige una unidad de venta del producto.";
+
+  const cantidad = leerNumero(valores.cantidad);
+  if (cantidad === null) errores.cantidad = valores.cantidad ? "Escribe solo dígitos y coma decimal (ej.: 6,28)." : "Indica la cantidad.";
+  else if (!(cantidad > 0)) errores.cantidad = "Debe ser mayor que 0.";
+  else if (unidadMatriz && !Number.isInteger(cantidad) && !unidades.find((u) => llave(u.nombre) === llave(unidadMatriz.unidad))?.aGranel) {
+    errores.cantidad = `La unidad "${unidadMatriz.unidad}" no es a granel: usa unidades enteras.`;
   }
-  return [...conteo.entries()]
-    .map(([k, n]) => ({ sku: nuevas.get(k).sku, existentes: n, nuevas: nuevas.get(k).nuevas }))
-    .sort((a, b) => a.sku.localeCompare(b.sku, "es"));
+
+  if (!String(valores.razonSocial ?? "").trim()) errores.razonSocial = "Indica la razón social del cliente.";
+  const rut = normalizarRut(valores.rut);
+  if (!rut) errores.rut = valores.rut ? "RUT no válido (revisa el dígito verificador)." : "Indica el RUT del cliente.";
+
+  const { docs, errores: erroresDocs } = validarDocumentos(valores);
+  if (erroresDocs.length) errores.documentos = erroresDocs.join(" ");
+
+  if (Object.keys(errores).length) return { errores, venta: null };
+
+  const venta = {
+    fecha: fechaIso(fecha),
+    sku: producto.sku,
+    descripcion: producto.descripcion,
+    razonSocial: valores.razonSocial.trim(),
+    rut,
+    cantidad,
+    unidad: unidadMatriz.unidad,
+    ...docs,
+  };
+  const repetida = existentes.find((e) => e.id !== idEditando && firmaVenta(e) === firmaVenta(venta));
+  if (repetida) {
+    errores.general = `Venta repetida: ya existe ${textoDocumentos(venta)} con el mismo SKU, unidad y cantidad (${fechaChilena(repetida.fecha)}, ${repetida.razonSocial}).`;
+    return { errores, venta: null };
+  }
+  return { errores, venta };
+};
+
+// Datos que se comparan entre una venta guardada y la nueva (para mostrar qué cambia).
+export const CAMPOS_COMPARADOS = [
+  { key: "fecha", label: "Fecha" },
+  { key: "rut", label: "RUT" },
+  { key: "razonSocial", label: "Razón social" },
+  { key: "cantidad", label: "Cantidad" },
+  ...DOCUMENTOS.map((d) => ({ key: d.key, label: d.label })),
+];
+export const cambiosEntre = (antes, despues) =>
+  CAMPOS_COMPARADOS.filter((c) => llave(antes[c.key]) !== llave(despues[c.key])).map((c) => c.key);
+
+/**
+ * Modo "combinar" por documento: ventas guardadas del periodo que comparten algún número de documento (del mismo tipo)
+ * con las líneas del archivo. Todas se reemplazan por las del archivo; se clasifican para informar y pedir confirmación.
+ *   completa:   misma venta (SKU, unidad, cantidad, RUT y día) y el archivo solo agrega documentos → sin confirmación.
+ *   sinCambios: misma venta con los mismos documentos → sin confirmación.
+ *   modifica:   mismo documento y SKU + unidad, pero cambia otro dato → requiere confirmación (muestra antes y después).
+ *   elimina:    venta de un documento del archivo que el archivo ya no trae → requiere confirmación.
+ *   ajenas:     ventas de otro usuario que un REP no puede reemplazar → bloquean la carga.
+ * Cada elemento: { existente, nueva?, cambios? }.
+ */
+export const clasificarCoincidencias = (lineas, existentes, { puedeTodo, usuarioId }) => {
+  const r = { completa: [], sinCambios: [], modifica: [], elimina: [], ajenas: [] };
+  const mismoProducto = (n, e) => llave(n.sku) === llave(e.sku) && llave(n.unidad) === llave(e.unidad);
+  for (const e of existentes) {
+    const candidatas = lineas.filter((n) => compartenDocumento(n, e));
+    if (!candidatas.length) continue;
+    if (!puedeTodo && e.creadoPorId !== usuarioId) {
+      r.ajenas.push({ existente: e });
+      continue;
+    }
+    const igual = candidatas.find((n) => mismoProducto(n, e) && n.cantidad === e.cantidad && n.rut === e.rut
+      && n.fecha.slice(0, 10) === e.fecha.slice(0, 10)
+      && DOCUMENTOS.every((d) => e[d.key] == null || llave(n[d.key]) === llave(e[d.key])));
+    if (igual) {
+      const agrega = DOCUMENTOS.some((d) => e[d.key] == null && igual[d.key] != null);
+      r[agrega ? "completa" : "sinCambios"].push({ existente: e, nueva: igual, cambios: cambiosEntre(e, igual) });
+      continue;
+    }
+    const par = candidatas.find((n) => mismoProducto(n, e));
+    if (par) r.modifica.push({ existente: e, nueva: par, cambios: cambiosEntre(e, par) });
+    else r.elimina.push({ existente: e });
+  }
+  return r;
 };

@@ -8,6 +8,7 @@ import Home from './Paginas/Home';
 import Header from './Componentes/Header';
 import Sidebar from './Componentes/Sidebar';
 import CrearReporte from './Paginas/CrearReporte';
+import ReportePeriodo from './Paginas/ReportePeriodo';
 import GestDoc from './Paginas/GestDoc';
 import Tutoriales from './Paginas/Tutoriales';
 import Soporte from './Paginas/Soporte'; // Importa el nuevo componente
@@ -70,7 +71,9 @@ function App() {
           <Route path="/inicio" element={<PrivateRoute><Home /></PrivateRoute>} />
           <Route path="/matriz-materiales" element={<PrivateRoute><MatrizMateriales /></PrivateRoute>} />
           <Route path="/registro-ventas" element={<PrivateRoute><RegistroVentas /></PrivateRoute>} />
-          <Route path="/crear-reporte" element={<PrivateRoute><CrearReporte /></PrivateRoute>} />
+          {/* T8.6: reporte desde la BD. El flujo anterior por archivos queda oculto (solo dev) hasta validar el nuevo. */}
+          <Route path="/crear-reporte" element={<PrivateRoute><ReportePeriodo /></PrivateRoute>} />
+          <Route path="/crear-reporte-archivos" element={<PrivateRoute allowedProfiles={['dev']}><CrearReporte /></PrivateRoute>} />
           <Route path="/gestion-archivos" element={<PrivateRoute><GestDoc /></PrivateRoute>} />
           <Route path="/tutoriales" element={<PrivateRoute><Tutoriales /></PrivateRoute>} />
           <Route path="/soporte" element={<PrivateRoute><Soporte /></PrivateRoute>} />
