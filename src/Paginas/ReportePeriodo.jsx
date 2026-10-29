@@ -3,6 +3,7 @@ import Dialogo from "../Componentes/Dialogo.jsx";
 import { AuthContext } from "../context/AuthContext.jsx";
 import { API_MATERIALES, API_REPORTES, API_VENTAS } from "../config/api";
 import { descargarArchivo, llamarApi, textoError } from "../config/apiCliente.js";
+import { Indicador, Indicadores } from "../Componentes/Indicador.jsx";
 import { MESES, nombrePeriodo } from "../Componentes/ventasRevision.js";
 import { Loader2, Lock, AlertTriangle, CheckCircle2, X, Trash2, Calculator, FileCheck2, FileSpreadsheet, Info, History } from "lucide-react";
 
@@ -27,12 +28,6 @@ const periodoAnterior = () => {
 // llamarApi: cliente común (config/apiCliente.js).
 
 // ── Resultado: resumen, líneas no encontradas y toneladas por material ────────
-const Tarjeta = ({ n, texto, cls }) => (
-  <div className={`rounded-xl px-4 py-3 ${cls}`}>
-    <p className="text-2xl font-bold tabular-nums">{n.toLocaleString("es-CL")}</p>
-    <p className="text-xs">{texto}</p>
-  </div>
-);
 
 const Resultado = ({ calculo }) => {
   const [categoria, setCategoria] = useState("");
@@ -46,11 +41,12 @@ const Resultado = ({ calculo }) => {
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Tarjeta n={resumen.lineas} texto="Líneas de venta del periodo" cls="bg-gray-100 text-neutral-700" />
-        <Tarjeta n={resumen.procesadas} texto="Procesadas" cls="bg-green-50 text-green-800" />
-        <Tarjeta n={resumen.noEncontradas.length} texto="No encontradas en la Matriz (no se contabilizan)" cls="bg-yellow-50 text-yellow-800" />
-      </div>
+      <Indicadores>
+        <Indicador etiqueta="Líneas de venta del periodo" valor={resumen.lineas} />
+        <Indicador etiqueta="Procesadas" valor={resumen.procesadas} tono="correcto" />
+        <Indicador etiqueta="No encontradas en la Matriz (no se contabilizan)" valor={resumen.noEncontradas.length} tono="atencion" />
+        <Indicador etiqueta="Toneladas totales" valor={formatoTon(materiales.reduce((n, m) => n + (m.toneladasPeligroso || 0) + (m.toneladasNoPeligroso || 0) + (m.toneladasTotal || 0), 0))} />
+      </Indicadores>
 
       {resumen.noEncontradas.length > 0 && (
         <section className="rounded-xl border border-yellow-200 bg-yellow-50 p-4">

@@ -3,6 +3,7 @@ import Dialogo from "../Componentes/Dialogo.jsx";
 import { AuthContext } from "../context/AuthContext.jsx";
 import { API_MATERIALES, API_VENTAS } from "../config/api";
 import { llamarApi } from "../config/apiCliente.js";
+import { Indicador, Indicadores } from "../Componentes/Indicador.jsx";
 import CargaMasivaVentas from "../Componentes/CargaMasivaVentas.jsx";
 import { EncabezadoAjustable, ModalColumnas } from "../Componentes/columnasTabla.jsx";
 import { useVistaTabla } from "../Componentes/useVistaTabla.js";
@@ -264,19 +265,12 @@ const RegistroVentas = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-          {[
-            ["Líneas de venta", resumen.lineas.toLocaleString("es-CL")],
-            ["SKU distintos", resumen.skus.toLocaleString("es-CL")],
-            ["Clientes", resumen.clientes.toLocaleString("es-CL")],
-            ["Última carga", resumen.ultima ? formatoFechaHora(resumen.ultima.creadoFecha) : "—"],
-          ].map(([texto, valor]) => (
-            <div key={texto} className="rounded-xl border border-gray-200 px-4 py-3">
-              <p className="text-xs text-neutral-500">{texto}</p>
-              <p className="text-xl font-bold text-neutral-800 tabular-nums">{valor}</p>
-            </div>
-          ))}
-        </div>
+        <Indicadores className="mb-5">
+          <Indicador etiqueta="Líneas de venta" valor={resumen.lineas} />
+          <Indicador etiqueta="SKU distintos" valor={resumen.skus} />
+          <Indicador etiqueta="Clientes" valor={resumen.clientes} />
+          <Indicador etiqueta="Última carga" valor={resumen.ultima ? formatoFechaHora(resumen.ultima.creadoFecha) : "—"} />
+        </Indicadores>
 
         <div className="flex flex-wrap items-center gap-3 mb-3">
           <h2 className="font-semibold text-neutral-800">Ventas de {nombrePeriodo(periodo)}</h2>

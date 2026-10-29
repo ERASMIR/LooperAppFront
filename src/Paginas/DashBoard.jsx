@@ -8,6 +8,7 @@ import {
 import { AuthContext } from "../context/AuthContext";
 import { API_REPORTES } from "../config/api";
 import { llamarApi } from "../config/apiCliente.js";
+import { Indicador, Indicadores } from "../Componentes/Indicador.jsx";
 import { MESES } from "../Componentes/ventasRevision.js";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
@@ -236,11 +237,15 @@ function Dashboard() {
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
       {resumen && (
-        <div className="mb-4 flex flex-wrap gap-3 text-sm">
-          <span className="rounded-lg bg-white shadow-sm px-4 py-2">
-            <b>{resumen.periodos.length}</b> de {totalPeriodos} periodos con reporte · sistema de gestión <b>{resumen.gransic?.nombre || "—"}</b>
-          </span>
-        </div>
+        <Indicadores className="mb-4">
+          <Indicador etiqueta={`Periodos con reporte (de ${totalPeriodos})`} valor={resumen.periodos.length} />
+          <Indicador etiqueta="Periodos sin reporte" valor={resumen.faltantes.length} tono="atencion" />
+          <Indicador
+            etiqueta="Toneladas del rango"
+            valor={formatoTon(resumen.materiales.reduce((n, m) => n + (m.toneladasPeligroso || 0) + (m.toneladasNoPeligroso || 0) + (m.toneladasTotal || 0), 0))}
+          />
+          <Indicador etiqueta="Sistema de gestión" valor={resumen.gransic?.nombre || "—"} />
+        </Indicadores>
       )}
 
       {resumen?.faltantes?.length > 0 && (

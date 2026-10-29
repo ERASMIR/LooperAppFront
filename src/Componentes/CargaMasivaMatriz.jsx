@@ -5,6 +5,7 @@ import {
   EXTENSIONES, FILAS_POR_PAGINA, mostrarValor, huellaDe, leerConfig, guardarConfig, leerArchivo, descargarErrores,
 } from "./cargaMasivaLectura.js";
 import { Ventana, FilaAsignacion, Paginado } from "./cargaMasivaComun.jsx";
+import { Indicador, Indicadores } from "./Indicador.jsx";
 
 // Carga masiva de la Matriz de Materiales: leer el archivo, asignar columnas, vista previa (parte A),
 // revisar el contenido, autorizar valores nuevos y guardar (parte B; lógica en cargaMasivaRevision.js).
@@ -499,10 +500,10 @@ const CargaMasivaMatriz = ({ gransic, catalogos, productos, puedeEditar, claveCo
 
 // ── Revisión: resumen, errores y cambios ─────────────────────────────────────
 const ESTADOS = {
-  nuevo: { label: "Nuevos", cls: "bg-green-50 text-green-800" },
-  modificado: { label: "Modificados", cls: "bg-blue-50 text-blue-800" },
-  sinCambios: { label: "Sin cambios", cls: "bg-gray-100 text-neutral-600" },
-  error: { label: "Con errores (no se cargan)", cls: "bg-red-50 text-red-700" },
+  nuevo: { label: "Nuevos", cls: "bg-green-50 text-green-800", tono: "correcto" },
+  modificado: { label: "Modificados", cls: "bg-blue-50 text-blue-800", tono: "cambio" },
+  sinCambios: { label: "Sin cambios", cls: "bg-gray-100 text-neutral-600", tono: "neutro" },
+  error: { label: "Con errores (no se cargan)", cls: "bg-red-50 text-red-700", tono: "error" },
 };
 const ETIQUETA_ESTADO = { nuevo: "Nuevo", modificado: "Modificado" };
 
@@ -521,14 +522,11 @@ const Revision = ({ archivo, revision, productos, conQuitados, decisionDe, onDec
     <div className="pb-4 space-y-5">
       <div>
         <p className="text-sm text-neutral-700 mb-2"><b>{archivo}</b> · {productos.length} SKU revisados</p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <Indicadores>
           {[["nuevo", resumen.nuevos], ["modificado", resumen.modificados], ["sinCambios", resumen.sinCambios], ["error", resumen.conError]].map(([estado, n]) => (
-            <div key={estado} className={`rounded-xl px-3 py-2 ${ESTADOS[estado].cls}`}>
-              <p className="text-2xl font-bold tabular-nums">{n}</p>
-              <p className="text-xs">{ESTADOS[estado].label}</p>
-            </div>
+            <Indicador key={estado} etiqueta={ESTADOS[estado].label} valor={n} tono={ESTADOS[estado].tono} />
           ))}
-        </div>
+        </Indicadores>
         <p className="text-xs text-neutral-500 mt-2">
           Se guardan los nuevos y los modificados. Los sin cambios no se tocan, y los productos de la matriz que no vienen en
           el archivo quedan como están.

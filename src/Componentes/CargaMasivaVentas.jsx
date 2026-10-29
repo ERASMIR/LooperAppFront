@@ -5,6 +5,7 @@ import {
   EXTENSIONES, FILAS_POR_PAGINA, mostrarValor, huellaDe, leerConfig, guardarConfig, leerArchivo, descargarErrores,
 } from "./cargaMasivaLectura.js";
 import { Ventana, FilaAsignacion, Paginado } from "./cargaMasivaComun.jsx";
+import { Indicador, Indicadores } from "./Indicador.jsx";
 import {
   revisarVentas, clasificarCoincidencias, nombrePeriodo, leerFecha, fechaIso, fechaChilena, DOCUMENTOS, CAMPOS_COMPARADOS,
   textoDocumentos, documentosEnOtrosPeriodos, textoDudosa,
@@ -479,12 +480,6 @@ const CargaMasivaVentas = ({
 };
 
 // ── Revisión: resumen, errores, excluidos, advertencias y modo de carga ──────
-const Tarjeta = ({ n, texto, cls }) => (
-  <div className={`rounded-xl px-3 py-2 ${cls}`}>
-    <p className="text-2xl font-bold tabular-nums">{n.toLocaleString("es-CL")}</p>
-    <p className="text-xs">{texto}</p>
-  </div>
-);
 
 const Revision = ({
   archivo, periodo, revision, camposNuevos, existentes, modo, onModo, coincidencias, dudosas, puedeTodo, autorizado, onAutorizar,
@@ -497,12 +492,12 @@ const Revision = ({
     <div className="pb-4 space-y-5">
       <div>
         <p className="text-sm text-neutral-700 mb-2"><b>{archivo}</b> · {plural(resumen.filas, "fila revisada", "filas revisadas")}</p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <Tarjeta n={resumen.validas} texto="Líneas válidas" cls="bg-green-50 text-green-800" />
-          <Tarjeta n={resumen.conError} texto="Filas con error (bloquean)" cls="bg-red-50 text-red-700" />
-          <Tarjeta n={resumen.excluidas} texto="No están en la Matriz (no se guardan)" cls="bg-yellow-50 text-yellow-800" />
-          <Tarjeta n={advertencias.length} texto="Descripciones distintas (aviso)" cls="bg-gray-100 text-neutral-600" />
-        </div>
+        <Indicadores>
+          <Indicador etiqueta="Líneas válidas" valor={resumen.validas} tono="correcto" />
+          <Indicador etiqueta="Filas con error (bloquean)" valor={resumen.conError} tono="error" />
+          <Indicador etiqueta="No están en la Matriz (no se guardan)" valor={resumen.excluidas} tono="atencion" />
+          <Indicador etiqueta="Descripciones distintas (aviso)" valor={advertencias.length} tono="atencion" />
+        </Indicadores>
       </div>
 
       {hayErrores && (

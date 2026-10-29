@@ -8,6 +8,7 @@ import { EncabezadoAjustable, ModalColumnas } from "../Componentes/columnasTabla
 import { useVistaTabla } from "../Componentes/useVistaTabla.js";
 import Paginacion from "../Componentes/Paginacion.jsx";
 import { paginar } from "../Componentes/paginar.js";
+import { Indicador, Indicadores } from "../Componentes/Indicador.jsx";
 import {
   Plus, X, Trash2, Search, Paperclip, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, Pencil, Loader2, Columns3,
 } from "lucide-react";
@@ -410,8 +411,18 @@ const ListadoProductos = ({
   const vista = paginar(filtrados, pagina, PRODUCTOS_POR_PAGINA);
   const cambiarPagina = (n) => { setPagina(n); setAbierto(null); };
 
+  // Resumen de la matriz (mismo estándar que Ventas y Reporte: Componentes/Indicador.jsx), sobre toda la matriz.
+  const ultima = productos.reduce((max, p) => (p.actualizadoFecha > (max || "") ? p.actualizadoFecha : max), null);
+
   return (
     <div>
+      <Indicadores className="mb-5">
+        <Indicador etiqueta="Productos" valor={productos.length} />
+        <Indicador etiqueta="Unidades de venta" valor={productos.reduce((n, p) => n + p.unidades.length, 0)} />
+        <Indicador etiqueta="Con respaldo adjunto" valor={productos.filter((p) => p.adjunto).length} />
+        <Indicador etiqueta="Última actualización" valor={ultima ? formatoFecha(ultima) : "—"} />
+      </Indicadores>
+
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <div className="relative w-full max-w-sm">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
