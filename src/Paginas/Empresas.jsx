@@ -1,4 +1,5 @@
 import React, { useCallback, useContext, useEffect, useState } from "react";
+import Dialogo from "../Componentes/Dialogo.jsx";
 import { AuthContext } from "../context/AuthContext.jsx";
 import { API_USUARIOS } from "../config/api";
 import { normalizarRut } from "../Componentes/ventasRevision.js";
@@ -87,11 +88,10 @@ const FormularioEmpresa = ({ inicial, gransicList, puedeGransic, onGuardar, onCe
   );
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <form onSubmit={guardar} noValidate className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[calc(100dvh-2rem)] flex flex-col">
+    <Dialogo como="form" onSubmit={guardar} noValidate onCerrar={guardando ? undefined : onCerrar} className="max-w-2xl max-h-[calc(100dvh-2rem)] flex flex-col">
         <div className="flex justify-between items-center px-6 pt-5 pb-3 border-b">
           <h2 className="text-lg font-bold text-neutral-800">{editando ? `Editar ${inicial.nombre}` : "Nueva empresa"}</h2>
-          <button type="button" onClick={onCerrar} className="p-1 rounded-full hover:bg-gray-100"><X className="w-5 h-5" /></button>
+          <button type="button" onClick={onCerrar} aria-label="Cerrar" className="p-1 rounded-full hover:bg-gray-100"><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <div className="px-6 py-5 overflow-y-auto space-y-5">
           <section>
@@ -131,13 +131,12 @@ const FormularioEmpresa = ({ inicial, gransicList, puedeGransic, onGuardar, onCe
           {errorGeneral && <p className="text-sm text-red-600">{errorGeneral}</p>}
         </div>
         <div className="flex justify-end gap-3 px-6 py-4 border-t">
-          <button type="button" onClick={onCerrar} disabled={guardando} className="bg-white text-primary border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
-          <button type="submit" disabled={guardando} className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400">
+          <button type="button" onClick={onCerrar} disabled={guardando} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
+          <button type="submit" disabled={guardando} className="inline-flex items-center gap-2 bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker disabled:bg-gray-400">
             {guardando && <Loader2 className="w-4 h-4 animate-spin" />} {editando ? "Guardar cambios" : "Crear empresa"}
           </button>
         </div>
-      </form>
-    </div>
+    </Dialogo>
   );
 };
 
@@ -187,7 +186,7 @@ const Empresas = () => {
       <div className="bg-white p-6 rounded-lg shadow-sm">
         <div className="flex flex-wrap items-center gap-3 mb-4">
           {esDev && (
-            <button onClick={() => setEditando({})} className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">
+            <button onClick={() => setEditando({})} className="inline-flex items-center gap-2 bg-primary-dark text-white px-4 py-2 rounded-lg hover:bg-primary-darker text-sm">
               <Plus className="w-4 h-4" /> Nueva empresa
             </button>
           )}
@@ -239,7 +238,7 @@ const Empresas = () => {
                       <td className="p-3">{e.id_retc || "—"}</td>
                       <td className="p-3">{nombreGransic(e.gransic_id)}</td>
                       <td className="p-3 text-right">
-                        <button title="Editar" onClick={() => setEditando(e)} className="p-1.5 rounded-full hover:bg-gray-100 text-primary">
+                        <button title="Editar" onClick={() => setEditando(e)} className="p-1.5 rounded-full hover:bg-gray-100 text-primary-dark">
                           <Pencil className="w-4 h-4" />
                         </button>
                       </td>

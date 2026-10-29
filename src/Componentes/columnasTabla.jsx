@@ -1,4 +1,5 @@
 import React from "react";
+import Dialogo from "./Dialogo.jsx";
 import { X, Lock, RotateCcw } from "lucide-react";
 
 // Piezas de la tabla con columnas configurables (ver useVistaTabla.js).
@@ -24,11 +25,10 @@ export const ModalColumnas = ({ columnas, vistaTabla, tituloDatos, onCerrar }) =
     ["Información adicional", columnas.filter((c) => c.campo)],
   ];
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+    <Dialogo onCerrar={onCerrar} className="max-w-md p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-bold text-neutral-800">Columnas de la tabla</h2>
-          <button onClick={onCerrar} className="p-1 rounded-full hover:bg-gray-100"><X className="w-5 h-5" /></button>
+          <button onClick={onCerrar} aria-label="Cerrar" className="p-1 rounded-full hover:bg-gray-100"><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <p className="text-sm text-neutral-500 mb-3">Elige qué columnas ver. Para cambiar el ancho, arrastra el borde derecho del encabezado.</p>
         <div className="max-h-96 overflow-y-auto space-y-4">
@@ -43,7 +43,7 @@ export const ModalColumnas = ({ columnas, vistaTabla, tituloDatos, onCerrar }) =
                     checked={vistaTabla.esVisible(c)}
                     disabled={c.fija}
                     onChange={(e) => vistaTabla.cambiarVisible(c.id, e.target.checked)}
-                    className="w-4 h-4 accent-primary"
+                    className="w-4 h-4 accent-primary-dark"
                   />
                   <span className="flex-1">{c.label}</span>
                   {c.fija && <Lock className="w-3.5 h-3.5" aria-label="Columna fija" />}
@@ -53,12 +53,11 @@ export const ModalColumnas = ({ columnas, vistaTabla, tituloDatos, onCerrar }) =
           ))}
         </div>
         <div className="flex justify-between gap-3 mt-6">
-          <button onClick={vistaTabla.restablecer} className="flex items-center gap-1 text-sm text-primary hover:text-green-800">
+          <button onClick={vistaTabla.restablecer} className="flex items-center gap-1 text-sm text-primary-dark hover:text-green-800">
             <RotateCcw className="w-4 h-4" /> Restablecer vista
           </button>
-          <button onClick={onCerrar} className="bg-primary text-white px-5 py-2 rounded-lg hover:bg-green-700">Listo</button>
+          <button onClick={onCerrar} className="bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker">Listo</button>
         </div>
-      </div>
-    </div>
+    </Dialogo>
   );
 };

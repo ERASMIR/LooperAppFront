@@ -86,7 +86,7 @@ const Header = () => {
         <select
           value={user.empresaId || ""}
           onChange={handleEmpresaChange}
-          className="appearance-none bg-transparent border-none text-lg text-gray-700 hover:text-primary transition cursor-pointer focus:outline-none pr-1"
+          className="appearance-none bg-transparent border-none text-lg text-gray-700 hover:text-primary-dark transition cursor-pointer focus:outline-none pr-1"
         >
           {empresas.length === 0 && (
             <option value={user.empresaId || ""}>{user.empresa || "Sin empresa"}</option>
@@ -103,7 +103,7 @@ const Header = () => {
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 text-lg text-gray-700 hover:text-primary transition"
+          className="flex items-center gap-2 text-lg text-gray-700 hover:text-primary-dark transition"
         >
           {user.name}
           <ChevronDown size={18} />

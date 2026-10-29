@@ -1,4 +1,5 @@
 import React from "react";
+import Dialogo from "./Dialogo.jsx";
 import { X, AlertTriangle } from "lucide-react";
 import { FILAS_POR_PAGINA, inputCls } from "./cargaMasivaLectura.js";
 
@@ -6,16 +7,14 @@ import { FILAS_POR_PAGINA, inputCls } from "./cargaMasivaLectura.js";
 
 // ── Ventana ───────────────────────────────────────────────────────────────────
 export const Ventana = ({ titulo, onCerrar, children, pie }) => (
-  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[calc(100dvh-2rem)] flex flex-col">
-      <div className="flex justify-between items-center px-6 pt-5 pb-3">
-        <h2 className="text-lg font-bold text-neutral-800">{titulo}</h2>
-        <button onClick={onCerrar} className="p-1 rounded-full hover:bg-gray-100"><X className="w-5 h-5" /></button>
-      </div>
-      <div className="px-6 overflow-y-auto flex-1 min-h-0">{children}</div>
-      <div className="px-6 py-3 border-t flex flex-wrap items-center justify-end gap-3">{pie}</div>
+  <Dialogo onCerrar={onCerrar} className="max-w-4xl max-h-[calc(100dvh-2rem)] flex flex-col">
+    <div className="flex justify-between items-center px-6 pt-5 pb-3">
+      <h2 className="text-lg font-bold text-neutral-800">{titulo}</h2>
+      <button onClick={onCerrar} aria-label="Cerrar" className="p-1 rounded-full hover:bg-gray-100"><X className="w-5 h-5" aria-hidden="true" /></button>
     </div>
-  </div>
+    <div className="px-6 overflow-y-auto flex-1 min-h-0">{children}</div>
+    <div className="px-6 py-3 border-t flex flex-wrap items-center justify-end gap-3">{pie}</div>
+  </Dialogo>
 );
 
 // Una fila de la asignación: nombre del campo, desplegable con las columnas del archivo y un valor de ejemplo.
@@ -41,7 +40,7 @@ export const Paginado = ({ total, mostradas, onMas, texto }) => (
   <div className="flex items-center justify-between gap-3 mt-2 text-sm text-neutral-500">
     <span>Mostrando {Math.min(mostradas, total)} de {total} {texto}</span>
     {mostradas < total && (
-      <button onClick={onMas} className="bg-white text-primary border border-primary px-4 py-1.5 rounded-lg hover:bg-green-50">
+      <button onClick={onMas} className="bg-white text-primary-dark border border-primary px-4 py-1.5 rounded-lg hover:bg-green-50">
         Traer {FILAS_POR_PAGINA} más
       </button>
     )}

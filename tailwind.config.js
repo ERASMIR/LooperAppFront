@@ -11,10 +11,16 @@ export default {
       fontFamily: {
         sans: ['Poppins', ...defaultTheme.fontFamily.sans],
       },
+      fontSize: {
+        // Con la base de 14 px (index.css), el text-xs de Tailwind (0,75rem) quedaría en 10,5 px: se sube a ~11,2 px.
+        xs: ['0.8rem', { lineHeight: '1.15rem' }],
+      },
       colors: {
         primary: {
-          DEFAULT: '#00b86b', // Verde principal
+          DEFAULT: '#00b86b', // Verde principal: acentos, bordes, íconos grandes y gráficos (2,6:1 sobre blanco: no para texto)
           light: '#ecfdf5',   // Verde claro para fondos y hover
+          dark: '#007f4a',    // Mismo verde, oscuro: texto verde y fondos con texto blanco (5,1:1, WCAG AA)
+          darker: '#006b3e',  // Hover de los botones primary-dark
         },
         neutral: {
           50: '#f8fafc',

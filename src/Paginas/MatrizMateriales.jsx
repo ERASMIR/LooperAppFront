@@ -1,9 +1,12 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import Dialogo from "../Componentes/Dialogo.jsx";
 import { AuthContext } from "../context/AuthContext.jsx";
 import { API_MATERIALES } from "../config/api";
 import CargaMasivaMatriz from "../Componentes/CargaMasivaMatriz.jsx";
 import { EncabezadoAjustable, ModalColumnas } from "../Componentes/columnasTabla.jsx";
 import { useVistaTabla } from "../Componentes/useVistaTabla.js";
+import Paginacion from "../Componentes/Paginacion.jsx";
+import { paginar } from "../Componentes/paginar.js";
 import {
   Plus, X, Trash2, Search, Paperclip, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, Pencil, Loader2, Columns3,
 } from "lucide-react";
@@ -121,9 +124,9 @@ const aBase64 = (archivo) =>
 
 // ── Piezas comunes ────────────────────────────────────────────────────────────
 // Desplegable con botón "+" para crear un valor nuevo (solo admin/dev). opciones: [{ value, label }].
-const SelectConMas = ({ value, onChange, opciones, placeholder, onMas, puedeCrear, disabled, tituloMas }) => (
+const SelectConMas = ({ id, value, onChange, opciones, placeholder, onMas, puedeCrear, disabled, tituloMas }) => (
   <div className="flex gap-1.5">
-    <select value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} className={inputCls}>
+    <select id={id} value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} className={inputCls}>
       <option value="">{placeholder}</option>
       {opciones.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
@@ -133,7 +136,7 @@ const SelectConMas = ({ value, onChange, opciones, placeholder, onMas, puedeCrea
         onClick={onMas}
         disabled={disabled}
         title={tituloMas}
-        className="flex-shrink-0 w-9 rounded-lg bg-primary text-white flex items-center justify-center hover:bg-green-700 disabled:bg-gray-300"
+        className="flex-shrink-0 w-9 rounded-lg bg-primary-dark text-white flex items-center justify-center hover:bg-primary-darker disabled:bg-gray-300"
       >
         <Plus className="w-4 h-4" />
       </button>
@@ -142,15 +145,13 @@ const SelectConMas = ({ value, onChange, opciones, placeholder, onMas, puedeCrea
 );
 
 const Modal = ({ titulo, onCerrar, children }) => (
-  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-bold text-neutral-800">{titulo}</h2>
-        <button onClick={onCerrar} className="p-1 rounded-full hover:bg-gray-100"><X className="w-5 h-5" /></button>
-      </div>
-      {children}
+  <Dialogo onCerrar={onCerrar} className="max-w-md p-6">
+    <div className="flex justify-between items-center mb-4">
+      <h2 className="text-lg font-bold text-neutral-800">{titulo}</h2>
+      <button onClick={onCerrar} aria-label="Cerrar" className="p-1 rounded-full hover:bg-gray-100"><X className="w-5 h-5" aria-hidden="true" /></button>
     </div>
-  </div>
+    {children}
+  </Dialogo>
 );
 
 // Modal genérico para crear un elemento de catálogo. onGuardar es async y puede lanzar el error del back.
@@ -179,9 +180,9 @@ const ModalNuevo = ({ titulo, campos, onGuardar, onCerrar, existentes }) => {
       <div className="space-y-3">
         {campos.map((c) => (
           <div key={c.key}>
-            <label className={labelCls}>{c.label}</label>
+            <label htmlFor={`nuevo-${c.key}`} className={labelCls}>{c.label}</label>
             {c.opciones ? (
-              <select value={valores[c.key]} onChange={(e) => setValores({ ...valores, [c.key]: e.target.value })} className={inputCls}>
+              <select id={`nuevo-${c.key}`} value={valores[c.key]} onChange={(e) => setValores({ ...valores, [c.key]: e.target.value })} className={inputCls}>
                 <option value="">Seleccionar</option>
                 {c.opciones.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
@@ -202,8 +203,8 @@ const ModalNuevo = ({ titulo, campos, onGuardar, onCerrar, existentes }) => {
         {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
       <div className="flex justify-end gap-3 mt-6">
-        <button onClick={onCerrar} className="bg-white text-primary border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
-        <button onClick={guardar} disabled={guardando} className="bg-primary text-white px-5 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400">
+        <button onClick={onCerrar} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
+        <button onClick={guardar} disabled={guardando} className="bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker disabled:bg-gray-400">
           {guardando ? "Guardando…" : "Agregar"}
         </button>
       </div>
@@ -234,11 +235,11 @@ const ModalConfirmar = ({ titulo, children, textoConfirmar, peligro, onConfirmar
       </div>
       {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
       <div className="flex justify-end gap-3 mt-6">
-        <button onClick={onCerrar} className="bg-white text-primary border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
+        <button onClick={onCerrar} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
         <button
           onClick={confirmar}
           disabled={enCurso}
-          className={`text-white px-5 py-2 rounded-lg disabled:bg-gray-400 ${peligro ? "bg-red-600 hover:bg-red-700" : "bg-primary hover:bg-green-700"}`}
+          className={`text-white px-5 py-2 rounded-lg disabled:bg-gray-400 ${peligro ? "bg-red-600 hover:bg-red-700" : "bg-primary-dark hover:bg-primary-darker"}`}
         >
           {enCurso ? "Procesando…" : textoConfirmar}
         </button>
@@ -301,7 +302,7 @@ const ModalGestionarCampos = ({ campos, onRenombrar, onEliminar, onCerrar }) => 
                   autoFocus
                   className={inputCls}
                 />
-                <button onClick={() => guardarNombre(c)} disabled={enCurso} className="px-3 rounded-lg bg-primary text-white text-sm hover:bg-green-700 disabled:bg-gray-400">
+                <button onClick={() => guardarNombre(c)} disabled={enCurso} className="px-3 rounded-lg bg-primary-dark text-white text-sm hover:bg-primary-darker disabled:bg-gray-400">
                   Guardar
                 </button>
                 <button onClick={() => { setEditandoId(null); setError(""); }} title="Cancelar" className="p-1.5 rounded-full hover:bg-gray-100">
@@ -311,7 +312,7 @@ const ModalGestionarCampos = ({ campos, onRenombrar, onEliminar, onCerrar }) => 
             ) : eliminandoId === c.id ? (
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <span className="flex-1">¿Eliminar <b>{c.nombre}</b>?</span>
-                <button onClick={() => setEliminandoId(null)} className="px-3 py-1 rounded-lg border border-primary text-primary hover:bg-green-50">Cancelar</button>
+                <button onClick={() => setEliminandoId(null)} className="px-3 py-1 rounded-lg border border-primary text-primary-dark hover:bg-green-50">Cancelar</button>
                 <button onClick={() => ejecutar(() => onEliminar(c.id))} disabled={enCurso} className="px-3 py-1 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-400">
                   Eliminar
                 </button>
@@ -322,7 +323,7 @@ const ModalGestionarCampos = ({ campos, onRenombrar, onEliminar, onCerrar }) => 
                 <button
                   title="Renombrar"
                   onClick={() => { setEditandoId(c.id); setNombre(c.nombre); setEliminandoId(null); setError(""); }}
-                  className="p-1.5 rounded-full hover:bg-green-50 text-primary"
+                  className="p-1.5 rounded-full hover:bg-green-50 text-primary-dark"
                 >
                   <Pencil className="w-4 h-4" />
                 </button>
@@ -340,7 +341,7 @@ const ModalGestionarCampos = ({ campos, onRenombrar, onEliminar, onCerrar }) => 
       </ul>
       {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
       <div className="flex justify-end mt-6">
-        <button onClick={onCerrar} className="bg-white text-primary border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cerrar</button>
+        <button onClick={onCerrar} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cerrar</button>
       </div>
     </Modal>
   );
@@ -348,12 +349,14 @@ const ModalGestionarCampos = ({ campos, onRenombrar, onEliminar, onCerrar }) => 
 
 // ── Pestaña: listado de productos ─────────────────────────────────────────────
 const ANCHO_DETALLE = 40;
+const PRODUCTOS_POR_PAGINA = 50;
 const ANCHO_ACCIONES = 96;
 
 const ListadoProductos = ({
   productos, tienePeligrosidad, subcategorias, puedeEditar, onEditar, onEliminar, campos, camposComponente, claveVista,
 }) => {
   const [busqueda, setBusqueda] = useState("");
+  const [pagina, setPagina] = useState(1);
   const [abierto, setAbierto] = useState(null);
   const [editandoColumnas, setEditandoColumnas] = useState(false);
 
@@ -392,7 +395,7 @@ const ListadoProductos = ({
         target="_blank"
         rel="noreferrer"
         onClick={(e) => e.stopPropagation()}
-        className="flex items-center gap-1 text-primary hover:underline min-w-0"
+        className="flex items-center gap-1 text-primary-dark hover:underline min-w-0"
         title={etiquetaTipo(p.adjunto.tipo)}
       >
         <Paperclip className="w-4 h-4 flex-shrink-0" /> <span className="truncate">{p.adjunto.nombre}</span>
@@ -414,6 +417,9 @@ const ListadoProductos = ({
   const filtrados = productos.filter((p) =>
     `${p.sku} ${p.descripcion}`.toLowerCase().includes(busqueda.trim().toLowerCase())
   );
+  // Paginado (UX-09): con cientos de productos se dibujaban miles de elementos de una vez.
+  const vista = paginar(filtrados, pagina, PRODUCTOS_POR_PAGINA);
+  const cambiarPagina = (n) => { setPagina(n); setAbierto(null); };
 
   return (
     <div>
@@ -422,14 +428,15 @@ const ListadoProductos = ({
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
+            onChange={(e) => { setBusqueda(e.target.value); setPagina(1); }}
+            aria-label="Buscar por SKU o descripción"
             placeholder="Buscar por SKU o descripción"
             className="w-full bg-gray-100 pl-9 p-2.5 text-sm rounded-lg"
           />
         </div>
         <button
           onClick={() => setEditandoColumnas(true)}
-          className="flex items-center gap-2 bg-white text-primary border border-primary px-4 py-2 rounded-lg hover:bg-green-50 text-sm"
+          className="flex items-center gap-2 bg-white text-primary-dark border border-primary px-4 py-2 rounded-lg hover:bg-green-50 text-sm"
         >
           <Columns3 className="w-4 h-4" /> Columnas
         </button>
@@ -453,10 +460,21 @@ const ListadoProductos = ({
             {filtrados.length === 0 && (
               <tr><td colSpan={totalColumnas} className="p-6 text-center text-neutral-500">No hay productos registrados.</td></tr>
             )}
-            {filtrados.map((p) => (
+            {vista.filas.map((p) => (
               <React.Fragment key={p.id}>
                 <tr className="border-t hover:bg-gray-50 cursor-pointer" onClick={() => setAbierto(abierto === p.id ? null : p.id)}>
-                  <td className="p-3 text-gray-500">{abierto === p.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}</td>
+                  {/* UX-04: botón real para abrir el detalle con teclado; la fila sigue respondiendo al clic */}
+                  <td className="p-2">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setAbierto(abierto === p.id ? null : p.id); }}
+                      aria-expanded={abierto === p.id}
+                      aria-label={`${abierto === p.id ? "Ocultar" : "Ver"} la composición de ${p.sku}`}
+                      className="p-1 rounded-md text-neutral-600 hover:bg-gray-100"
+                    >
+                      {abierto === p.id ? <ChevronDown className="w-4 h-4" aria-hidden="true" /> : <ChevronRight className="w-4 h-4" aria-hidden="true" />}
+                    </button>
+                  </td>
                   {visibles.map((c) => <td key={c.id} className="p-3 break-words">{c.render(p)}</td>)}
                   {puedeEditar && (
                     <td className="p-3">
@@ -464,7 +482,7 @@ const ListadoProductos = ({
                         <button
                           title="Editar producto"
                           onClick={(e) => { e.stopPropagation(); onEditar(p); }}
-                          className="p-1.5 rounded-full hover:bg-green-50 text-primary"
+                          className="p-1.5 rounded-full hover:bg-green-50 text-primary-dark"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
@@ -543,6 +561,15 @@ const ListadoProductos = ({
           </tbody>
         </table>
       </div>
+      <Paginacion
+        total={filtrados.length}
+        pagina={vista.pagina}
+        paginas={vista.paginas}
+        porPagina={PRODUCTOS_POR_PAGINA}
+        onCambiar={cambiarPagina}
+        nombre="productos"
+        nombreUno="producto"
+      />
 
       {editandoColumnas && (
         <ModalColumnas
@@ -698,7 +725,7 @@ const CrearProducto = ({
           <button
             onClick={() => setActivo(true)}
             disabled={!puedeEditar || activo}
-            className="flex items-center gap-2 bg-primary text-white px-5 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400"
+            className="flex items-center gap-2 bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker disabled:bg-gray-400"
           >
             <Plus className="w-4 h-4" /> Crear nuevo producto
           </button>
@@ -722,9 +749,10 @@ const CrearProducto = ({
           <h2 className="font-bold text-neutral-800 mb-4">Datos del producto</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className={labelCls}>SKU</label>
+              <label htmlFor="producto-sku" className={labelCls}>SKU</label>
               <div className="flex gap-1.5">
                 <input
+                  id="producto-sku"
                   value={producto.sku}
                   onChange={(e) => set("sku", e.target.value)}
                   disabled={bloqueado || (editando && !skuDesbloqueado)}
@@ -735,7 +763,7 @@ const CrearProducto = ({
                     type="button"
                     onClick={() => setConfirmarSku(true)}
                     title="Cambiar el SKU"
-                    className="flex-shrink-0 px-3 rounded-lg border border-primary text-primary text-xs hover:bg-green-50"
+                    className="flex-shrink-0 px-3 rounded-lg border border-primary text-primary-dark text-xs hover:bg-green-50"
                   >
                     Cambiar
                   </button>
@@ -743,21 +771,21 @@ const CrearProducto = ({
               </div>
             </div>
             <div className="md:col-span-2">
-              <label className={labelCls}>Descripción</label>
-              <input value={producto.descripcion} onChange={(e) => set("descripcion", e.target.value)} className={inputCls} />
+              <label htmlFor="producto-descripcion" className={labelCls}>Descripción</label>
+              <input id="producto-descripcion" value={producto.descripcion} onChange={(e) => set("descripcion", e.target.value)} className={inputCls} />
             </div>
             {tienePeligrosidad && (
               <>
                 <div>
-                  <label className={labelCls}>Categoría</label>
-                  <select value={producto.categoria} onChange={(e) => cambiarCategoriaProducto(e.target.value)} className={`${inputCls} capitalize`}>
+                  <label htmlFor="producto-categoria" className={labelCls}>Categoría</label>
+                  <select id="producto-categoria" value={producto.categoria} onChange={(e) => cambiarCategoriaProducto(e.target.value)} className={`${inputCls} capitalize`}>
                     <option value="">Seleccionar</option>
                     {categorias.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className={labelCls}>Peligrosidad</label>
-                  <select value={producto.peligrosidad} onChange={(e) => set("peligrosidad", e.target.value)} className={inputCls}>
+                  <label htmlFor="producto-peligrosidad" className={labelCls}>Peligrosidad</label>
+                  <select id="producto-peligrosidad" value={producto.peligrosidad} onChange={(e) => set("peligrosidad", e.target.value)} className={inputCls}>
                     <option value="">Seleccionar</option>
                     <option value="peligroso">Peligroso</option>
                     <option value="no peligroso">No peligroso</option>
@@ -780,8 +808,9 @@ const CrearProducto = ({
             <div key={iu} className="border border-gray-200 rounded-xl p-4 mb-4">
               <div className="flex flex-wrap justify-between items-end gap-4 mb-3">
                 <div className="w-full max-w-xs">
-                  <label className={labelCls}>Unidad de venta</label>
+                  <label htmlFor={`producto-unidad-${iu}`} className={labelCls}>Unidad de venta</label>
                   <SelectConMas
+                    id={`producto-unidad-${iu}`}
                     value={u.unidadVentaId}
                     onChange={(v) => setUnidad(iu, v)}
                     opciones={opcionesUnidad.filter((o) => o.value === u.unidadVentaId || !producto.unidades.some((y) => y.unidadVentaId === o.value))}
@@ -919,7 +948,7 @@ const CrearProducto = ({
               <button
                 type="button"
                 onClick={() => set("unidades", producto.unidades.map((x, i) => i !== iu ? x : { ...x, filas: [...x.filas, filaVacia()] }))}
-                className="mt-2 text-sm text-primary flex items-center gap-1 hover:text-green-800"
+                className="mt-2 text-sm text-primary-dark flex items-center gap-1 hover:text-green-800"
               >
                 <Plus className="w-4 h-4" /> Agregar componente
               </button>
@@ -929,7 +958,7 @@ const CrearProducto = ({
           <button
             type="button"
             onClick={() => set("unidades", [...producto.unidades, unidadVacia()])}
-            className="bg-white text-primary border border-primary px-4 py-2 rounded-lg hover:bg-green-50 flex items-center gap-1 text-sm"
+            className="bg-white text-primary-dark border border-primary px-4 py-2 rounded-lg hover:bg-green-50 flex items-center gap-1 text-sm"
           >
             <Plus className="w-4 h-4" /> Agregar otra unidad de venta
           </button>
@@ -951,7 +980,7 @@ const CrearProducto = ({
                   <button
                     type="button"
                     onClick={onGestionarCampos}
-                    className="bg-white text-primary border border-primary px-4 py-2 rounded-lg hover:bg-green-50 text-sm"
+                    className="bg-white text-primary-dark border border-primary px-4 py-2 rounded-lg hover:bg-green-50 text-sm"
                   >
                     Gestionar campos
                   </button>
@@ -959,7 +988,7 @@ const CrearProducto = ({
                 <button
                   type="button"
                   onClick={() => abrirModal("campo", (id, campo) => !esDeComponente(campo) && setCampoAdicional(id, campo.valor))}
-                  className="bg-white text-primary border border-primary px-4 py-2 rounded-lg hover:bg-green-50 flex items-center gap-1 text-sm"
+                  className="bg-white text-primary-dark border border-primary px-4 py-2 rounded-lg hover:bg-green-50 flex items-center gap-1 text-sm"
                 >
                   <Plus className="w-4 h-4" /> Nuevo campo
                 </button>
@@ -972,8 +1001,9 @@ const CrearProducto = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {camposProducto.map((c) => (
                 <div key={c.id}>
-                  <label className={labelCls}>{c.nombre}</label>
+                  <label htmlFor={`producto-campo-${c.id}`} className={labelCls}>{c.nombre}</label>
                   <input
+                    id={`producto-campo-${c.id}`}
                     value={producto.camposAdicionales[c.id] || ""}
                     onChange={(e) => setCampoAdicional(c.id, e.target.value)}
                     maxLength={MAX_VALOR_CAMPO}
@@ -994,8 +1024,9 @@ const CrearProducto = ({
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
             <div>
-              <label className={labelCls}>Tipo de respaldo</label>
+              <label htmlFor="producto-adjunto-tipo" className={labelCls}>Tipo de respaldo</label>
               <select
+                id="producto-adjunto-tipo"
                 value={producto.adjunto?.tipo || ""}
                 onChange={(e) => producto.adjunto && set("adjunto", { ...producto.adjunto, tipo: e.target.value })}
                 disabled={bloqueado || !producto.adjunto || producto.adjunto.existente}
@@ -1010,7 +1041,7 @@ const CrearProducto = ({
                 <div className="flex items-center gap-2 bg-gray-100 p-2.5 rounded-lg text-sm">
                   <Paperclip className="w-4 h-4 text-neutral-500" />
                   {producto.adjunto.urlWeb ? (
-                    <a href={producto.adjunto.urlWeb} target="_blank" rel="noreferrer" className="flex-1 truncate text-primary hover:underline">{producto.adjunto.nombre}</a>
+                    <a href={producto.adjunto.urlWeb} target="_blank" rel="noreferrer" className="flex-1 truncate text-primary-dark hover:underline">{producto.adjunto.nombre}</a>
                   ) : (
                     <span className="flex-1 truncate">{producto.adjunto.nombre}</span>
                   )}
@@ -1033,8 +1064,8 @@ const CrearProducto = ({
         )}
 
         <div className="flex justify-end gap-3">
-          <button type="button" onClick={cancelar} className="bg-white text-primary border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
-          <button type="button" onClick={guardar} className="bg-primary text-white px-5 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400">
+          <button type="button" onClick={cancelar} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
+          <button type="button" onClick={guardar} className="bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker disabled:bg-gray-400">
             {guardando ? "Guardando…" : editando ? "Guardar nueva versión" : "Guardar producto"}
           </button>
         </div>
@@ -1288,7 +1319,7 @@ const MatrizMateriales = () => {
             <button
               key={id}
               onClick={() => setPestana(id)}
-              className={`px-4 py-2 text-sm rounded-xl transition ${pestana === id ? "bg-primary text-white" : "bg-gray-200 hover:bg-gray-300"}`}
+              className={`px-4 py-2 text-sm rounded-xl transition ${pestana === id ? "bg-primary-dark text-white" : "bg-gray-200 hover:bg-gray-300"}`}
             >
               {label}
             </button>

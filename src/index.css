@@ -1,3 +1,12 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Escala global (auditoría UI, UX-08): base de 14 px en vez de 16 px. Como Tailwind usa rem, texto y espacios bajan
+   juntos: la app al 100 % se ve como antes al ~87 % (la persona prefiere cómo se ve al 80 %). text-xs se ajusta en
+   tailwind.config.js para que la letra chica no quede ilegible. */
+@layer base {
+  html {
+    font-size: 87.5%;
+  }
+}

@@ -31,7 +31,7 @@ const Panel = ({ isOpen, toggle, children, collapsedIcon, style }) => (
   <div style={style} className="relative flex flex-col transition-all duration-300 ease-in-out bg-white rounded-lg shadow-md">
     <button
       onClick={toggle}
-      className="absolute top-2 right-2 bg-white text-primary rounded-md w-7 h-7 flex items-center justify-center shadow-md hover:bg-primary-light transition z-10"
+      className="absolute top-2 right-2 bg-white text-primary-dark rounded-md w-7 h-7 flex items-center justify-center shadow-md hover:bg-primary-light transition z-10"
       title={isOpen ? "Colapsar" : "Expandir"}
       aria-label={isOpen ? "Colapsar panel" : "Expandir panel"}
     >
@@ -53,7 +53,7 @@ const SumatoriaPanel = ({ filas, tienePeligrosidad, categorias, filtroCategoria,
           <button
             key={c || "todas"}
             onClick={() => setFiltroCategoria(c)}
-            className={`px-3 py-1 rounded-md text-sm font-medium border transition capitalize ${filtroCategoria === c ? "bg-primary text-white" : "hover:bg-neutral-100"}`}
+            className={`px-3 py-1 rounded-md text-sm font-medium border transition capitalize ${filtroCategoria === c ? "bg-primary-dark text-white" : "hover:bg-neutral-100"}`}
           >
             {c || "Todas"}
           </button>
@@ -230,7 +230,7 @@ function Dashboard() {
         <button
           onClick={consultar}
           disabled={cargando}
-          className="inline-flex items-center gap-2 bg-primary text-white font-semibold px-4 py-2 rounded-md hover:bg-primary/90 transition disabled:bg-neutral-400"
+          className="inline-flex items-center gap-2 bg-primary-dark text-white font-semibold px-4 py-2 rounded-md hover:bg-primary-darker transition disabled:bg-neutral-400"
         >
           {cargando && <Loader2 className="w-4 h-4 animate-spin" />} {cargando ? "Consultando…" : "Consultar"}
         </button>

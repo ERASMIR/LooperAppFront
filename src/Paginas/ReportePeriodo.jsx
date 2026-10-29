@@ -1,4 +1,5 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import Dialogo from "../Componentes/Dialogo.jsx";
 import { AuthContext } from "../context/AuthContext.jsx";
 import { API_MATERIALES, API_REPORTES, API_VENTAS } from "../config/api";
 import { MESES, nombrePeriodo } from "../Componentes/ventasRevision.js";
@@ -96,13 +97,13 @@ const Resultado = ({ calculo }) => {
             <button
               key={c || "todas"}
               onClick={() => setCategoria(c)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-semibold border capitalize ${categoria === c ? "bg-primary text-white border-primary" : "bg-white text-gray-700 border-gray-300 hover:bg-neutral-100"}`}
+              className={`px-3 py-1.5 rounded-lg text-sm font-semibold border capitalize ${categoria === c ? "bg-primary-dark text-white border-primary" : "bg-white text-gray-700 border-gray-300 hover:bg-neutral-100"}`}
             >
               {c || "Todas"}
             </button>
           ))}
           <label className="ml-auto flex items-center gap-2 text-sm text-neutral-600 cursor-pointer">
-            <input type="checkbox" checked={soloConValor} onChange={(e) => setSoloConValor(e.target.checked)} className="accent-primary" />
+            <input type="checkbox" checked={soloConValor} onChange={(e) => setSoloConValor(e.target.checked)} className="accent-primary-dark" />
             Solo materiales con toneladas
           </label>
         </div>
@@ -207,7 +208,16 @@ const ListadoReportes = ({ periodos, puedeEliminar, onAbrir, onEliminar }) => (
                   ? <span className="px-2 py-0.5 rounded-full bg-green-50 text-green-800 text-xs">Vigente</span>
                   : <span className="px-2 py-0.5 rounded-full bg-gray-100 text-neutral-600 text-xs">Sin reporte vigente</span>}
               </td>
-              <td className="p-3 text-right">
+              <td className="p-3 text-right whitespace-nowrap">
+                {/* UX-04: botón real para abrir con teclado; la fila sigue respondiendo al clic */}
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onAbrir(p); }}
+                  aria-label={`Ver el reporte de ${nombrePeriodo(p)}`}
+                  className="px-2 py-1 rounded-md text-sm font-medium text-primary-dark hover:bg-primary-light"
+                >
+                  Ver
+                </button>
                 {puedeEliminar && p.vigente && (
                   <button
                     title="Eliminar reporte (desbloquea las ventas del periodo)"
@@ -236,7 +246,7 @@ const BotonPlanillaReSimple = ({ reporte, descargando, error, onDescargar }) => 
       <button
         onClick={() => onDescargar(reporte)}
         disabled={descargando}
-        className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm disabled:bg-gray-400"
+        className="inline-flex items-center gap-2 bg-primary-dark text-white px-4 py-2 rounded-lg hover:bg-primary-darker text-sm disabled:bg-gray-400"
       >
         {descargando ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />} Reporte ReSimple .xlsx
       </button>
@@ -248,8 +258,7 @@ const BotonPlanillaReSimple = ({ reporte, descargando, error, onDescargar }) => 
 const VentanaReporte = ({ grupo, detalle, puedeEliminar, onEliminar, onCerrar, descargando, errorDescarga, onDescargar }) => {
   const { vigente, versiones } = grupo;
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-5xl max-h-[calc(100dvh-2rem)] flex flex-col">
+    <Dialogo onCerrar={onCerrar} className="max-w-5xl max-h-[calc(100dvh-2rem)] flex flex-col">
         <div className="flex justify-between items-start gap-3 px-6 pt-5 pb-3 border-b">
           <div>
             <h2 className="text-lg font-bold text-neutral-800">Reporte de {nombrePeriodo(grupo)}</h2>
@@ -266,7 +275,7 @@ const VentanaReporte = ({ grupo, detalle, puedeEliminar, onEliminar, onCerrar, d
                 <Trash2 className="w-4 h-4" /> Eliminar reporte
               </button>
             )}
-            <button onClick={onCerrar} className="p-1 rounded-full hover:bg-gray-100"><X className="w-5 h-5" /></button>
+            <button onClick={onCerrar} aria-label="Cerrar" className="p-1 rounded-full hover:bg-gray-100"><X className="w-5 h-5" aria-hidden="true" /></button>
           </div>
         </div>
         <div className="px-6 py-5 overflow-y-auto space-y-8">
@@ -308,19 +317,16 @@ const VentanaReporte = ({ grupo, detalle, puedeEliminar, onEliminar, onCerrar, d
             </div>
           </section>
         </div>
-      </div>
-    </div>
+    </Dialogo>
   );
 };
 
-const Modal = ({ titulo, children, pie }) => (
-  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60] p-4">
-    <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6">
-      <h2 className="text-lg font-bold text-neutral-800 mb-3">{titulo}</h2>
-      {children}
-      <div className="flex justify-end gap-3 mt-6">{pie}</div>
-    </div>
-  </div>
+const Modal = ({ titulo, children, pie, onCerrar }) => (
+  <Dialogo onCerrar={onCerrar} capa="z-[60]" className="max-w-lg p-6">
+    <h2 className="text-lg font-bold text-neutral-800 mb-3">{titulo}</h2>
+    {children}
+    <div className="flex justify-end gap-3 mt-6">{pie}</div>
+  </Dialogo>
 );
 
 // ── Página ────────────────────────────────────────────────────────────────────
@@ -487,7 +493,7 @@ const ReportePeriodo = () => {
             <Lock className="w-3.5 h-3.5" /> Sus ventas están bloqueadas. Para crear otro reporte, primero hay que eliminar el vigente{puedeEliminar ? "" : " (lo hace un administrador)"}.
           </p>
         </div>
-        <button onClick={() => setAbierto(clavePeriodo(periodo))} className="bg-white text-primary border border-primary px-4 py-2 rounded-lg hover:bg-green-50 text-sm">Ver reporte</button>
+        <button onClick={() => setAbierto(clavePeriodo(periodo))} className="bg-white text-primary-dark border border-primary px-4 py-2 rounded-lg hover:bg-green-50 text-sm">Ver reporte</button>
         {puedeEliminar && (
           <button onClick={() => setEliminando(vigente)} className="flex items-center gap-2 bg-white text-red-600 border border-red-300 px-4 py-2 rounded-lg hover:bg-red-50 text-sm">
             <Trash2 className="w-4 h-4" /> Eliminar reporte
@@ -502,8 +508,8 @@ const ReportePeriodo = () => {
         <div className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
           <Info className="w-5 h-5 flex-shrink-0" />
           <span className="flex-1">Vista previa del reporte de <b>{nombrePeriodo(periodo)}</b>: aún no se guarda. Revísala y confírmala.</span>
-          <button onClick={() => setCalculo(null)} className="bg-white text-primary border border-primary px-4 py-2 rounded-lg hover:bg-green-50">Descartar</button>
-          <button onClick={() => setConfirmando(true)} className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-green-700">Confirmar reporte</button>
+          <button onClick={() => setCalculo(null)} className="bg-white text-primary-dark border border-primary px-4 py-2 rounded-lg hover:bg-green-50">Descartar</button>
+          <button onClick={() => setConfirmando(true)} className="bg-primary-dark text-white px-4 py-2 rounded-lg hover:bg-primary-darker">Confirmar reporte</button>
         </div>
         <Resultado calculo={calculo} />
       </>
@@ -519,7 +525,7 @@ const ReportePeriodo = () => {
         <button
           onClick={procesar}
           disabled={!ventas.length || procesando}
-          className="mt-4 inline-flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          className="mt-4 inline-flex items-center gap-2 bg-primary-dark text-white px-6 py-2.5 rounded-lg hover:bg-primary-darker disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           {procesando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calculator className="w-4 h-4" />} {procesando ? "Procesando…" : "Procesar"}
         </button>
@@ -544,7 +550,7 @@ const ReportePeriodo = () => {
                 <button
                   key={id}
                   onClick={() => setPestana(id)}
-                  className={`px-4 py-2 text-sm rounded-xl transition ${pestana === id ? "bg-primary text-white" : "bg-gray-200 hover:bg-gray-300"}`}
+                  className={`px-4 py-2 text-sm rounded-xl transition ${pestana === id ? "bg-primary-dark text-white" : "bg-gray-200 hover:bg-gray-300"}`}
                 >
                   {label}
                 </button>
@@ -599,10 +605,11 @@ const ReportePeriodo = () => {
       {confirmando && (
         <Modal
           titulo={`Confirmar reporte de ${nombrePeriodo(periodo)}`}
+          onCerrar={guardando ? undefined : () => setConfirmando(false)}
           pie={(
             <>
-              <button onClick={() => setConfirmando(false)} disabled={guardando} className="bg-white text-primary border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
-              <button onClick={confirmar} disabled={guardando} className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400">
+              <button onClick={() => setConfirmando(false)} disabled={guardando} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
+              <button onClick={confirmar} disabled={guardando} className="inline-flex items-center gap-2 bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker disabled:bg-gray-400">
                 {guardando && <Loader2 className="w-4 h-4 animate-spin" />} Confirmar
               </button>
             </>
@@ -619,9 +626,10 @@ const ReportePeriodo = () => {
       {eliminando && (
         <Modal
           titulo={`Eliminar reporte de ${nombrePeriodo(eliminando)}`}
+          onCerrar={guardando ? undefined : () => { setEliminando(null); setMotivo(""); }}
           pie={(
             <>
-              <button onClick={() => { setEliminando(null); setMotivo(""); }} disabled={guardando} className="bg-white text-primary border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
+              <button onClick={() => { setEliminando(null); setMotivo(""); }} disabled={guardando} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
               <button onClick={eliminar} disabled={!motivo.trim() || guardando} className="inline-flex items-center gap-2 bg-red-600 text-white px-5 py-2 rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed">
                 {guardando && <Loader2 className="w-4 h-4 animate-spin" />} Eliminar
               </button>

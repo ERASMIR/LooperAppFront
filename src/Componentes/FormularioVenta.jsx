@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useId, useMemo, useState } from "react";
 import { AlertTriangle, Plus, Trash2 } from "lucide-react";
 import { Ventana } from "./cargaMasivaComun.jsx";
 import { inputCls } from "./cargaMasivaLectura.js";
@@ -32,15 +32,30 @@ const valoresIniciales = (venta) => {
   };
 };
 
-const Campo = ({ label, obligatorio, error, children, className = "" }) => (
-  <div className={className}>
-    <label className="block text-sm font-semibold text-neutral-700 mb-1">
-      {label}{obligatorio && <span className="text-red-600"> *</span>}
-    </label>
-    {children}
-    {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
-  </div>
-);
+// La etiqueta se une al primer input/select/textarea de children (htmlFor + id generado) y el error queda asociado al
+// campo (aria-describedby), para que el clic en la etiqueta enfoque el campo y los lectores de pantalla lo nombren.
+const Campo = ({ label, obligatorio, error, children, className = "" }) => {
+  const id = useId();
+  let unido = false;
+  const hijos = React.Children.map(children, (h) => {
+    if (unido || !React.isValidElement(h) || !["input", "select", "textarea"].includes(h.type)) return h;
+    unido = true;
+    return React.cloneElement(h, {
+      id: h.props.id || id,
+      "aria-invalid": error ? true : undefined,
+      "aria-describedby": error ? `${id}-error` : undefined,
+    });
+  });
+  return (
+    <div className={className}>
+      <label htmlFor={unido ? id : undefined} className="block text-sm font-semibold text-neutral-700 mb-1">
+        {label}{obligatorio && <span className="text-red-600"> *</span>}
+      </label>
+      {hijos}
+      {error && <p id={`${id}-error`} className="text-xs text-red-600 mt-1">{error}</p>}
+    </div>
+  );
+};
 
 // venta: la que se edita (null para una nueva). buscarClientes(q): async → [{ rut, razonSocial }] para sugerir la razón
 // social. revisarDocumentos([venta]): async → documentos ya registrados en otros periodos (aviso de registro dudoso).
@@ -158,11 +173,11 @@ const FormularioVenta = ({
           {intento && Object.keys(revision.errores).length > 0 && (
             <p className="mr-auto text-sm text-red-600">{revision.errores.general || "Revisa los datos marcados."}</p>
           )}
-          <button onClick={onCerrar} className="bg-white text-primary border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
+          <button onClick={onCerrar} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
           <button
             onClick={guardar}
             disabled={guardando}
-            className="bg-primary text-white px-5 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {guardando ? "Guardando…" : venta ? "Guardar cambios" : "Agregar venta"}
           </button>
@@ -290,7 +305,7 @@ const FormularioVenta = ({
               </button>
             </div>
           ))}
-          <button onClick={() => setNuevos((l) => [...l, { nombre: "", valor: "" }])} className="flex items-center gap-1 text-sm text-primary hover:text-green-800 mt-3">
+          <button onClick={() => setNuevos((l) => [...l, { nombre: "", valor: "" }])} className="flex items-center gap-1 text-sm text-primary-dark hover:text-green-800 mt-3">
             <Plus className="w-4 h-4" /> Crear campo adicional
           </button>
         </section>

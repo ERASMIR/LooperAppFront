@@ -227,7 +227,7 @@ const CargaMasivaVentas = ({
         onClick={() => inputRef.current?.click()}
         disabled={!puedeCargar || paso === "leyendo"}
         title={puedeCargar ? `Cargar las ventas de ${nombrePeriodo(periodo)} desde un archivo Excel o CSV` : motivoNoCargar}
-        className="flex items-center gap-2 bg-white text-primary border border-primary px-5 py-2 rounded-lg hover:bg-green-50 disabled:text-gray-400 disabled:border-gray-300 disabled:cursor-not-allowed"
+        className="flex items-center gap-2 bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50 disabled:text-gray-400 disabled:border-gray-300 disabled:cursor-not-allowed"
       >
         {paso === "leyendo" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Carga masiva
       </button>
@@ -239,8 +239,8 @@ const CargaMasivaVentas = ({
           onCerrar={cerrar}
           pie={(
             <>
-              <button onClick={cerrar} className="bg-white text-primary border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cerrar</button>
-              <button onClick={() => inputRef.current?.click()} className="bg-primary text-white px-5 py-2 rounded-lg hover:bg-green-700">Elegir otro archivo</button>
+              <button onClick={cerrar} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cerrar</button>
+              <button onClick={() => inputRef.current?.click()} className="bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker">Elegir otro archivo</button>
             </>
           )}
         >
@@ -268,13 +268,13 @@ const CargaMasivaVentas = ({
                   Falta asignar: {[...faltantes.map((b) => b.label), ...(FOLIOS_ASIGNADOS(asignacion) ? [] : ["un documento (factura, guía o boleta)"])].join(", ")}.
                 </p>
               )}
-              <button onClick={cerrar} className="bg-white text-primary border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
-              <button onClick={confirmarAsignacion} className="bg-primary text-white px-5 py-2 rounded-lg hover:bg-green-700">Confirmar asignación</button>
+              <button onClick={cerrar} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
+              <button onClick={confirmarAsignacion} className="bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker">Confirmar asignación</button>
             </>
           )}
         >
           <p className="flex items-center gap-2 text-sm text-neutral-700 mb-1">
-            <FileSpreadsheet className="w-4 h-4 text-primary" /> <b>{archivo.nombre}</b> · {archivo.filas.length} filas · {archivo.encabezados.length} columnas
+            <FileSpreadsheet className="w-4 h-4 text-primary-dark" /> <b>{archivo.nombre}</b> · {archivo.filas.length} filas · {archivo.encabezados.length} columnas
           </p>
           {archivo.combinadas > 0 && (
             <p className="text-xs text-neutral-500 mb-1">Se encontraron {archivo.combinadas} rangos de celdas combinadas: su valor se copió a cada fila.</p>
@@ -361,7 +361,7 @@ const CargaMasivaVentas = ({
                         checked={crear.includes(col)}
                         disabled={!!motivo}
                         onChange={(e) => setCrear((c) => (e.target.checked ? [...c, col] : c.filter((x) => x !== col)))}
-                        className="w-4 h-4 accent-primary"
+                        className="w-4 h-4 accent-primary-dark"
                       />
                       {motivo || "Crear como campo adicional"}
                     </label>
@@ -380,11 +380,11 @@ const CargaMasivaVentas = ({
           onCerrar={cerrar}
           pie={(
             <>
-              <button onClick={() => setPaso("asignar")} className="mr-auto bg-white text-primary border border-primary px-5 py-2 rounded-lg hover:bg-green-50">
+              <button onClick={() => setPaso("asignar")} className="mr-auto bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">
                 Volver a la asignación
               </button>
-              <button onClick={cerrar} className="bg-white text-primary border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
-              <button onClick={revisar} className="bg-primary text-white px-5 py-2 rounded-lg hover:bg-green-700">Revisar contenido</button>
+              <button onClick={cerrar} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
+              <button onClick={revisar} className="bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker">Revisar contenido</button>
             </>
           )}
         >
@@ -436,7 +436,7 @@ const CargaMasivaVentas = ({
           onCerrar={cerrar}
           pie={(
             <>
-              <button onClick={() => setPaso("vista")} className="mr-auto bg-white text-primary border border-primary px-5 py-2 rounded-lg hover:bg-green-50">
+              <button onClick={() => setPaso("vista")} className="mr-auto bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">
                 Volver a la vista previa
               </button>
               {errorGuardar && <p className="basis-full text-sm text-red-600">No se pudo guardar: {errorGuardar}</p>}
@@ -447,11 +447,11 @@ const CargaMasivaVentas = ({
               {revision.errores.length === 0 && !bloqueaAjenas && requiereAutorizacion && !autorizado && (
                 <p className="text-sm text-yellow-700">Autoriza el reemplazo para guardar.</p>
               )}
-              <button onClick={cerrar} className="bg-white text-primary border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
+              <button onClick={cerrar} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
               <button
                 onClick={guardar}
                 disabled={!puedeGuardar}
-                className="bg-primary text-white px-5 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 {guardando ? "Guardando…" : `Guardar ${plural(revision.lineas.length, "línea", "líneas")}`}
               </button>
@@ -513,7 +513,7 @@ const Revision = ({
             </h3>
             <button
               onClick={() => descargarErrores(archivo, errores, [["Fila", "fila", 6], ["SKU", "sku", 24], ["Error", "mensaje", 100]])}
-              className="flex items-center gap-1 text-sm text-primary hover:text-green-800"
+              className="flex items-center gap-1 text-sm text-primary-dark hover:text-green-800"
             >
               <Download className="w-4 h-4" /> Descargar errores (Excel)
             </button>
@@ -651,7 +651,7 @@ const Revision = ({
                 key={valor}
                 className={`flex gap-2 rounded-xl border p-3 cursor-pointer ${modo === valor ? (valor === "reemplazar" ? "border-red-400 bg-red-50" : "border-primary bg-green-50") : "border-gray-200 hover:bg-gray-50"}`}
               >
-                <input type="radio" name="modo" checked={modo === valor} onChange={() => onModo(valor)} className="mt-1 accent-primary" />
+                <input type="radio" name="modo" checked={modo === valor} onChange={() => onModo(valor)} className="mt-1 accent-primary-dark" />
                 <span>
                   <span className="block text-sm font-semibold text-neutral-800">{titulo}</span>
                   <span className="block text-xs text-neutral-600">{texto}</span>
@@ -780,7 +780,7 @@ const Coincidencias = ({ coincidencias, periodo, autorizado, onAutorizar }) => {
 
 const Autorizar = ({ autorizado, onAutorizar, children }) => (
   <label className="flex items-start gap-2 text-sm font-semibold text-neutral-800 cursor-pointer">
-    <input type="checkbox" checked={autorizado} onChange={(e) => onAutorizar(e.target.checked)} className="w-4 h-4 mt-0.5 accent-primary" />
+    <input type="checkbox" checked={autorizado} onChange={(e) => onAutorizar(e.target.checked)} className="w-4 h-4 mt-0.5 accent-primary-dark" />
     {children}
   </label>
 );

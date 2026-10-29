@@ -1,4 +1,5 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import Dialogo from "../Componentes/Dialogo.jsx";
 import { AuthContext } from "../context/AuthContext.jsx";
 import { API_MATERIALES, API_VENTAS } from "../config/api";
 import CargaMasivaVentas from "../Componentes/CargaMasivaVentas.jsx";
@@ -235,7 +236,7 @@ const RegistroVentas = () => {
               onClick={() => setFormulario({ venta: null })}
               disabled={!!bloqueo}
               title={bloqueo ? "El periodo está bloqueado" : `Ingresar a mano una venta de ${nombrePeriodo(periodo)}`}
-              className="flex items-center gap-2 bg-primary text-white px-5 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               <Plus className="w-4 h-4" /> Nueva venta
             </button>
@@ -294,7 +295,7 @@ const RegistroVentas = () => {
           <h2 className="font-semibold text-neutral-800">Ventas de {nombrePeriodo(periodo)}</h2>
           <button
             onClick={() => setEditandoColumnas(true)}
-            className="ml-auto flex items-center gap-2 bg-white text-primary border border-primary px-4 py-2 rounded-lg hover:bg-green-50 text-sm"
+            className="ml-auto flex items-center gap-2 bg-white text-primary-dark border border-primary px-4 py-2 rounded-lg hover:bg-green-50 text-sm"
           >
             <Columns3 className="w-4 h-4" /> Columnas
           </button>
@@ -350,7 +351,7 @@ const RegistroVentas = () => {
                               title={editable ? "Editar venta" : motivo}
                               disabled={!editable}
                               onClick={() => setFormulario({ venta: v })}
-                              className="p-1.5 rounded-full hover:bg-green-50 text-primary disabled:text-gray-300 disabled:hover:bg-transparent"
+                              className="p-1.5 rounded-full hover:bg-green-50 text-primary-dark disabled:text-gray-300 disabled:hover:bg-transparent"
                             >
                               <Pencil className="w-4 h-4" />
                             </button>
@@ -376,7 +377,7 @@ const RegistroVentas = () => {
                 {busqueda && ` (filtradas de ${ventas.length.toLocaleString("es-CL")})`}
               </span>
               {mostradas < filtradas.length && (
-                <button onClick={() => setMostradas((m) => m + LINEAS_POR_PAGINA)} className="bg-white text-primary border border-primary px-4 py-1.5 rounded-lg hover:bg-green-50">
+                <button onClick={() => setMostradas((m) => m + LINEAS_POR_PAGINA)} className="bg-white text-primary-dark border border-primary px-4 py-1.5 rounded-lg hover:bg-green-50">
                   Traer {LINEAS_POR_PAGINA} más
                 </button>
               )}
@@ -436,8 +437,7 @@ const RegistroVentas = () => {
         )}
 
         {eliminando && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+          <Dialogo onCerrar={() => { setEliminando(null); setErrorEliminar(""); }} className="max-w-md p-6">
               <h2 className="text-lg font-bold text-neutral-800 mb-3">Eliminar venta</h2>
               <p className="text-sm text-neutral-700">
                 ¿Eliminar la venta <b>{eliminando.sku}</b> · {formatoCantidad(eliminando.cantidad)} {eliminando.unidad} ·{" "}
@@ -446,11 +446,10 @@ const RegistroVentas = () => {
               <p className="text-xs text-neutral-500 mt-2">Deja de contar en {nombrePeriodo(periodo)}; queda registrada en la auditoría.</p>
               {errorEliminar && <p className="text-sm text-red-600 mt-3">No se pudo eliminar: {errorEliminar}</p>}
               <div className="flex justify-end gap-3 mt-6">
-                <button onClick={() => { setEliminando(null); setErrorEliminar(""); }} className="bg-white text-primary border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
+                <button onClick={() => { setEliminando(null); setErrorEliminar(""); }} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
                 <button onClick={eliminarVenta} className="bg-red-600 text-white px-5 py-2 rounded-lg hover:bg-red-700">Eliminar</button>
               </div>
-            </div>
-          </div>
+          </Dialogo>
         )}
 
         {editandoColumnas && (
