@@ -11,6 +11,12 @@ Front React de LOOPER (Ley REP). Contexto general en `../CLAUDE.md`; detalle té
 - Páginas en `src/Paginas/`, piezas comunes en `src/Componentes/`, URLs de API solo en `src/config/api.js`.
 - Textos de UI en español. Imitar el estilo de la página más parecida antes de crear una nueva.
 
+## Auditoría y mejoras de UI
+- Skills en `.claude/skills/` (versionadas): entrada **`auditoria-ui`** (preferencias de la persona: mismos colores,
+  limpio y ordenado, letra más chica como al 80 %, contraste AA, simple), que coordina `web-design-guidelines` (UX y
+  accesibilidad) → `vercel-react-best-practices` (código) → `frontend-design` (visual). Hallazgos en
+  `../specs/004-auditoria-front/hallazgos.md`. Auditar no cambia código; se implementa lo que la persona apruebe.
+
 ## Trampas conocidas
 - **Push a `main` = deploy automático** a Azure Static Web Apps (GitHub Actions).
 - `vite.config.local.js` es solo local (excluido en `.git/info/exclude`); no commitearlo ni copiar sus targets a `vite.config.js`.
