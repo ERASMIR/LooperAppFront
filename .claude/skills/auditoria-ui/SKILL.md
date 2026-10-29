@@ -33,6 +33,15 @@ El orden importa: lo visual va al final para no maquillar problemas de uso o de 
    - `neutral-400` / `gray-400` (#94a3b8) sobre blanco ≈ 2,6:1 → no usar para texto; `neutral-500` (#64748b) ≈ 4,8:1 sí.
    - Verificar siempre con números (fórmula de luminancia WCAG), no a ojo.
 
+5. **Piezas comunes ya definidas (usarlas, no inventar otras):** botones `btn-principal` / `btn-secundario` /
+   `btn-peligro` / `btn-peligro-borde` (+ `btn-chico`), `pestana` / `pestana-activa`, `chip` / `chip-activo` y `campo`
+   en `src/index.css`; ventanas con `Componentes/Dialogo.jsx`; listados largos con `Componentes/Paginacion.jsx`;
+   llamadas a la API con `src/config/apiCliente.js`.
+6. **Cuadros de resumen (decisión 2026-10-29):** siempre con `Componentes/Indicador.jsx`, **un color por significado,
+   igual en todos los módulos**: neutro (totales y contexto), correcto (procesado / válido / nuevo), cambio
+   (modificado), atención (no cuenta o hay que revisar) y error (bloquea). Atención y error solo se colorean si el
+   número es mayor que 0.
+
 ## Excepciones de las guías en LOOPER
 
 - **Textos en español**, con mayúscula solo al inicio (no "Title Case" de Chicago). Puntos suspensivos con `…` en
