@@ -2,6 +2,7 @@ import React, { useCallback, useContext, useEffect, useMemo, useState } from "re
 import Dialogo from "../Componentes/Dialogo.jsx";
 import { AuthContext } from "../context/AuthContext.jsx";
 import { API_MATERIALES, API_VENTAS } from "../config/api";
+import { llamarApi } from "../config/apiCliente.js";
 import CargaMasivaVentas from "../Componentes/CargaMasivaVentas.jsx";
 import { EncabezadoAjustable, ModalColumnas } from "../Componentes/columnasTabla.jsx";
 import { useVistaTabla } from "../Componentes/useVistaTabla.js";
@@ -21,7 +22,7 @@ const LINEAS_POR_PAGINA = 50;
 const MODOS = { combinar: "Combinar", reemplazar: "Reemplazar todo el periodo" };
 const ANCHO_ACCIONES = 80;
 
-const inputCls = "bg-gray-100 p-2.5 text-sm rounded-lg";
+const inputCls = "campo";
 const formatoCantidad = (n) => n.toLocaleString("es-CL", { maximumFractionDigits: 6 });
 const formatoFechaHora = (f) => new Date(f).toLocaleString("es-CL", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
@@ -31,21 +32,7 @@ const periodoAnterior = () => {
   return hoy.getMonth() === 0 ? { anio: hoy.getFullYear() - 1, mes: 12 } : { anio: hoy.getFullYear(), mes: hoy.getMonth() };
 };
 
-// Envía el JWT de la sesión. Si falla, lanza un Error con el mensaje del back y su lista de errores.
-const llamarApi = async (token, base, ruta, { metodo = "GET", body } = {}) => {
-  const res = await fetch(`${base}/${ruta}`, {
-    method: metodo,
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const data = await res.json().catch(() => null);
-  if (!res.ok) {
-    const err = new Error(data?.error || `Error ${res.status} al comunicarse con el servidor`);
-    err.errores = data?.errores || [];
-    throw err;
-  }
-  return data;
-};
+// llamarApi: cliente común (config/apiCliente.js).
 
 const RegistroVentas = () => {
   const { user, token } = useContext(AuthContext);
@@ -236,7 +223,7 @@ const RegistroVentas = () => {
               onClick={() => setFormulario({ venta: null })}
               disabled={!!bloqueo}
               title={bloqueo ? "El periodo está bloqueado" : `Ingresar a mano una venta de ${nombrePeriodo(periodo)}`}
-              className="flex items-center gap-2 bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="btn-principal"
             >
               <Plus className="w-4 h-4" /> Nueva venta
             </button>
@@ -295,7 +282,7 @@ const RegistroVentas = () => {
           <h2 className="font-semibold text-neutral-800">Ventas de {nombrePeriodo(periodo)}</h2>
           <button
             onClick={() => setEditandoColumnas(true)}
-            className="ml-auto flex items-center gap-2 bg-white text-primary-dark border border-primary px-4 py-2 rounded-lg hover:bg-green-50 text-sm"
+            className="btn-secundario ml-auto"
           >
             <Columns3 className="w-4 h-4" /> Columnas
           </button>
@@ -377,7 +364,7 @@ const RegistroVentas = () => {
                 {busqueda && ` (filtradas de ${ventas.length.toLocaleString("es-CL")})`}
               </span>
               {mostradas < filtradas.length && (
-                <button onClick={() => setMostradas((m) => m + LINEAS_POR_PAGINA)} className="bg-white text-primary-dark border border-primary px-4 py-1.5 rounded-lg hover:bg-green-50">
+                <button onClick={() => setMostradas((m) => m + LINEAS_POR_PAGINA)} className="btn-secundario btn-chico">
                   Traer {LINEAS_POR_PAGINA} más
                 </button>
               )}
@@ -446,8 +433,8 @@ const RegistroVentas = () => {
               <p className="text-xs text-neutral-500 mt-2">Deja de contar en {nombrePeriodo(periodo)}; queda registrada en la auditoría.</p>
               {errorEliminar && <p className="text-sm text-red-600 mt-3">No se pudo eliminar: {errorEliminar}</p>}
               <div className="flex justify-end gap-3 mt-6">
-                <button onClick={() => { setEliminando(null); setErrorEliminar(""); }} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
-                <button onClick={eliminarVenta} className="bg-red-600 text-white px-5 py-2 rounded-lg hover:bg-red-700">Eliminar</button>
+                <button onClick={() => { setEliminando(null); setErrorEliminar(""); }} className="btn-secundario">Cancelar</button>
+                <button onClick={eliminarVenta} className="btn-peligro">Eliminar</button>
               </div>
           </Dialogo>
         )}

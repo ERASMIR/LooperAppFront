@@ -56,7 +56,7 @@ export const ModalColumnas = ({ columnas, vistaTabla, tituloDatos, onCerrar }) =
           <button onClick={vistaTabla.restablecer} className="flex items-center gap-1 text-sm text-primary-dark hover:text-green-800">
             <RotateCcw className="w-4 h-4" /> Restablecer vista
           </button>
-          <button onClick={onCerrar} className="bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker">Listo</button>
+          <button onClick={onCerrar} className="btn-principal">Listo</button>
         </div>
     </Dialogo>
   );

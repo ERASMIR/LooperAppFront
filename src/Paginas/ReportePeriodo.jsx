@@ -2,6 +2,7 @@ import React, { useCallback, useContext, useEffect, useMemo, useState } from "re
 import Dialogo from "../Componentes/Dialogo.jsx";
 import { AuthContext } from "../context/AuthContext.jsx";
 import { API_MATERIALES, API_REPORTES, API_VENTAS } from "../config/api";
+import { descargarArchivo, llamarApi, textoError } from "../config/apiCliente.js";
 import { MESES, nombrePeriodo } from "../Componentes/ventasRevision.js";
 import { Loader2, Lock, AlertTriangle, CheckCircle2, X, Trash2, Calculator, FileCheck2, FileSpreadsheet, Info, History } from "lucide-react";
 
@@ -13,24 +14,7 @@ import { Loader2, Lock, AlertTriangle, CheckCircle2, X, Trash2, Calculator, File
 // (specs/003-reporte/plantilla-resimple.md).
 const esReSimple = (gransic) => /resimple/i.test(gransic?.nombre || "");
 
-// Descarga un archivo de la API (con la sesión) y lo guarda con el nombre que indica el back.
-const descargarArchivo = async (token, url, nombrePorDefecto) => {
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  if (!res.ok) {
-    const data = await res.json().catch(() => null);
-    const detalle = data?.errores?.length ? `: ${data.errores.join(", ")}` : "";
-    throw new Error(`${data?.error || `Error ${res.status} al generar el archivo`}${detalle}`);
-  }
-  const nombre = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") || "")?.[1] || nombrePorDefecto;
-  const enlace = document.createElement("a");
-  enlace.href = URL.createObjectURL(await res.blob());
-  enlace.download = nombre;
-  enlace.click();
-  setTimeout(() => URL.revokeObjectURL(enlace.href), 1000); // liberar después de que el navegador tome la descarga
-  return nombre;
-};
-
-const inputCls = "bg-gray-100 p-2.5 text-sm rounded-lg";
+const inputCls = "campo";
 const formatoTon = (n) => (n ? n.toLocaleString("es-CL", { minimumFractionDigits: 2, maximumFractionDigits: 6 }) : "—");
 const formatoFechaHora = (f) => new Date(f).toLocaleString("es-CL", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 const plural = (n, uno, varios) => `${n.toLocaleString("es-CL")} ${n === 1 ? uno : varios}`;
@@ -40,20 +24,7 @@ const periodoAnterior = () => {
   return hoy.getMonth() === 0 ? { anio: hoy.getFullYear() - 1, mes: 12 } : { anio: hoy.getFullYear(), mes: hoy.getMonth() };
 };
 
-const llamarApi = async (token, base, ruta, { metodo = "GET", body } = {}) => {
-  const res = await fetch(`${base}/${ruta}`, {
-    method: metodo,
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const data = await res.json().catch(() => null);
-  if (!res.ok) {
-    const err = new Error(data?.error || `Error ${res.status} al comunicarse con el servidor`);
-    err.errores = data?.errores || [];
-    throw err;
-  }
-  return data;
-};
+// llamarApi: cliente común (config/apiCliente.js).
 
 // ── Resultado: resumen, líneas no encontradas y toneladas por material ────────
 const Tarjeta = ({ n, texto, cls }) => (
@@ -97,7 +68,8 @@ const Resultado = ({ calculo }) => {
             <button
               key={c || "todas"}
               onClick={() => setCategoria(c)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-semibold border capitalize ${categoria === c ? "bg-primary-dark text-white border-primary" : "bg-white text-gray-700 border-gray-300 hover:bg-neutral-100"}`}
+              aria-pressed={categoria === c}
+              className={`chip capitalize ${categoria === c ? "chip-activo" : ""}`}
             >
               {c || "Todas"}
             </button>
@@ -246,7 +218,7 @@ const BotonPlanillaReSimple = ({ reporte, descargando, error, onDescargar }) => 
       <button
         onClick={() => onDescargar(reporte)}
         disabled={descargando}
-        className="inline-flex items-center gap-2 bg-primary-dark text-white px-4 py-2 rounded-lg hover:bg-primary-darker text-sm disabled:bg-gray-400"
+        className="btn-principal"
       >
         {descargando ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />} Reporte ReSimple .xlsx
       </button>
@@ -271,7 +243,7 @@ const VentanaReporte = ({ grupo, detalle, puedeEliminar, onEliminar, onCerrar, d
           </div>
           <div className="flex items-center gap-2">
             {puedeEliminar && vigente && (
-              <button onClick={() => onEliminar(vigente)} className="flex items-center gap-2 bg-white text-red-600 border border-red-300 px-4 py-2 rounded-lg hover:bg-red-50 text-sm">
+              <button onClick={() => onEliminar(vigente)} className="btn-peligro-borde">
                 <Trash2 className="w-4 h-4" /> Eliminar reporte
               </button>
             )}
@@ -466,7 +438,7 @@ const ReportePeriodo = () => {
       );
       setAviso(`Se descargó ${nombre}: la planilla oficial de ReSimple de ${nombrePeriodo(r)}, lista para cargarla en ReSimple.`);
     } catch (err) {
-      setErrorDescarga(err.message);
+      setErrorDescarga(textoError(err, ", "));
     } finally {
       setDescargando(false);
     }
@@ -493,9 +465,9 @@ const ReportePeriodo = () => {
             <Lock className="w-3.5 h-3.5" /> Sus ventas están bloqueadas. Para crear otro reporte, primero hay que eliminar el vigente{puedeEliminar ? "" : " (lo hace un administrador)"}.
           </p>
         </div>
-        <button onClick={() => setAbierto(clavePeriodo(periodo))} className="bg-white text-primary-dark border border-primary px-4 py-2 rounded-lg hover:bg-green-50 text-sm">Ver reporte</button>
+        <button onClick={() => setAbierto(clavePeriodo(periodo))} className="btn-secundario">Ver reporte</button>
         {puedeEliminar && (
-          <button onClick={() => setEliminando(vigente)} className="flex items-center gap-2 bg-white text-red-600 border border-red-300 px-4 py-2 rounded-lg hover:bg-red-50 text-sm">
+          <button onClick={() => setEliminando(vigente)} className="btn-peligro-borde">
             <Trash2 className="w-4 h-4" /> Eliminar reporte
           </button>
         )}
@@ -508,8 +480,8 @@ const ReportePeriodo = () => {
         <div className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
           <Info className="w-5 h-5 flex-shrink-0" />
           <span className="flex-1">Vista previa del reporte de <b>{nombrePeriodo(periodo)}</b>: aún no se guarda. Revísala y confírmala.</span>
-          <button onClick={() => setCalculo(null)} className="bg-white text-primary-dark border border-primary px-4 py-2 rounded-lg hover:bg-green-50">Descartar</button>
-          <button onClick={() => setConfirmando(true)} className="bg-primary-dark text-white px-4 py-2 rounded-lg hover:bg-primary-darker">Confirmar reporte</button>
+          <button onClick={() => setCalculo(null)} className="btn-secundario">Descartar</button>
+          <button onClick={() => setConfirmando(true)} className="btn-principal">Confirmar reporte</button>
         </div>
         <Resultado calculo={calculo} />
       </>
@@ -525,7 +497,7 @@ const ReportePeriodo = () => {
         <button
           onClick={procesar}
           disabled={!ventas.length || procesando}
-          className="mt-4 inline-flex items-center gap-2 bg-primary-dark text-white px-6 py-2.5 rounded-lg hover:bg-primary-darker disabled:bg-gray-400 disabled:cursor-not-allowed"
+          className="btn-principal mt-4"
         >
           {procesando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calculator className="w-4 h-4" />} {procesando ? "Procesando…" : "Procesar"}
         </button>
@@ -545,12 +517,13 @@ const ReportePeriodo = () => {
           <p className="text-neutral-600">Selecciona una empresa para crear su reporte.</p>
         ) : (
           <>
-            <div className="flex flex-wrap items-center gap-4 mb-6">
+            <div className="flex flex-wrap items-end gap-2 mb-6 border-b border-neutral-200">
               {[["crear", "Crear reporte"], ["historial", "Historial de reportes"]].map(([id, label]) => (
                 <button
                   key={id}
                   onClick={() => setPestana(id)}
-                  className={`px-4 py-2 text-sm rounded-xl transition ${pestana === id ? "bg-primary-dark text-white" : "bg-gray-200 hover:bg-gray-300"}`}
+                  aria-current={pestana === id ? "page" : undefined}
+                  className={`pestana ${pestana === id ? "pestana-activa" : ""}`}
                 >
                   {label}
                 </button>
@@ -608,8 +581,8 @@ const ReportePeriodo = () => {
           onCerrar={guardando ? undefined : () => setConfirmando(false)}
           pie={(
             <>
-              <button onClick={() => setConfirmando(false)} disabled={guardando} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
-              <button onClick={confirmar} disabled={guardando} className="inline-flex items-center gap-2 bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker disabled:bg-gray-400">
+              <button onClick={() => setConfirmando(false)} disabled={guardando} className="btn-secundario">Cancelar</button>
+              <button onClick={confirmar} disabled={guardando} className="btn-principal">
                 {guardando && <Loader2 className="w-4 h-4 animate-spin" />} Confirmar
               </button>
             </>
@@ -629,8 +602,8 @@ const ReportePeriodo = () => {
           onCerrar={guardando ? undefined : () => { setEliminando(null); setMotivo(""); }}
           pie={(
             <>
-              <button onClick={() => { setEliminando(null); setMotivo(""); }} disabled={guardando} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
-              <button onClick={eliminar} disabled={!motivo.trim() || guardando} className="inline-flex items-center gap-2 bg-red-600 text-white px-5 py-2 rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed">
+              <button onClick={() => { setEliminando(null); setMotivo(""); }} disabled={guardando} className="btn-secundario">Cancelar</button>
+              <button onClick={eliminar} disabled={!motivo.trim() || guardando} className="btn-peligro">
                 {guardando && <Loader2 className="w-4 h-4 animate-spin" />} Eliminar
               </button>
             </>

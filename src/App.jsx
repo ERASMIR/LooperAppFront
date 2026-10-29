@@ -1,26 +1,33 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthContext } from './context/AuthContext';
 
 // Componentes y Páginas
 import LogPage from "./LogPage";
-import Home from './Paginas/Home';
 import Header from './Componentes/Header';
 import Sidebar from './Componentes/Sidebar';
-import CrearReporte from './Paginas/CrearReporte';
-import ReportePeriodo from './Paginas/ReportePeriodo';
-import GestDoc from './Paginas/GestDoc';
-import Tutoriales from './Paginas/Tutoriales';
-import Soporte from './Paginas/Soporte'; // Importa el nuevo componente
-import DatosUsuario from './Paginas/DatosUsuario';
-import CreacionUsuario from './Paginas/CreacionUsuario';
-import Empresas from './Paginas/Empresas';
-import Dashboard from './Paginas/DashBoard';
-import Ecologica from './Paginas/ValidEcologica';
 import PrivateRoute from './Componentes/PrivateRoute';
-import GestionUsuarios from './Paginas/GestionUsuarios';
-import MatrizMateriales from './Paginas/MatrizMateriales';
-import RegistroVentas from './Paginas/RegistroVentas';
+
+// Páginas: cada una se descarga al abrirla (auditoría UI, RC-01). Antes todo iba en un solo archivo de ~1 MB
+// (xlsx y chart.js incluidos) que se bajaba ya en el login.
+const Home = lazy(() => import('./Paginas/Home'));
+const CrearReporte = lazy(() => import('./Paginas/CrearReporte'));
+const ReportePeriodo = lazy(() => import('./Paginas/ReportePeriodo'));
+const GestDoc = lazy(() => import('./Paginas/GestDoc'));
+const Tutoriales = lazy(() => import('./Paginas/Tutoriales'));
+const Soporte = lazy(() => import('./Paginas/Soporte'));
+const DatosUsuario = lazy(() => import('./Paginas/DatosUsuario'));
+const CreacionUsuario = lazy(() => import('./Paginas/CreacionUsuario'));
+const Empresas = lazy(() => import('./Paginas/Empresas'));
+const Dashboard = lazy(() => import('./Paginas/DashBoard'));
+const Ecologica = lazy(() => import('./Paginas/ValidEcologica'));
+const GestionUsuarios = lazy(() => import('./Paginas/GestionUsuarios'));
+const MatrizMateriales = lazy(() => import('./Paginas/MatrizMateriales'));
+const RegistroVentas = lazy(() => import('./Paginas/RegistroVentas'));
+
+const CargandoPagina = () => (
+  <p role="status" className="p-6 text-neutral-600">Cargando…</p>
+);
 
 // Layout principal de la aplicación
 function Layout({ children }) {
@@ -62,6 +69,7 @@ function App() {
   return (
     <Router>
       <Layout>
+        <Suspense fallback={<CargandoPagina />}>
         <Routes>
           {/* Rutas públicas */}
           <Route path="/" element={<LogPage />} />
@@ -89,6 +97,7 @@ function App() {
           {/* Redirección por defecto */}
           <Route path="*" element={<Navigate to="/inicio" replace />} />
         </Routes>
+        </Suspense>
       </Layout>
     </Router>
   );

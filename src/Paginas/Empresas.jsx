@@ -2,6 +2,7 @@ import React, { useCallback, useContext, useEffect, useState } from "react";
 import Dialogo from "../Componentes/Dialogo.jsx";
 import { AuthContext } from "../context/AuthContext.jsx";
 import { API_USUARIOS } from "../config/api";
+import { llamarApi as llamarApiBase, textoError } from "../config/apiCliente.js";
 import { normalizarRut } from "../Componentes/ventasRevision.js";
 import { Loader2, Pencil, Plus, X, CheckCircle2, AlertTriangle } from "lucide-react";
 
@@ -9,19 +10,9 @@ import { Loader2, Pencil, Plus, X, CheckCircle2, AlertTriangle } from "lucide-re
 // representante legal) más el ID RETC del MMA. Dev crea y edita todas; el admin edita solo la suya (sin el GRANSIC, que
 // define el cálculo). API: /empresas de looper-usuarios (GET/POST/PUT, con sesión). Plan: specs/003-reporte/plantilla-resimple.md
 
-const llamarApi = async (token, metodo, body) => {
-  const res = await fetch(`${API_USUARIOS}/empresas`, {
-    method: metodo,
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const data = await res.json().catch(() => null);
-  if (!res.ok) {
-    const detalle = data?.errores?.length ? `: ${data.errores.join(" ")}` : "";
-    throw new Error(`${data?.error || `Error ${res.status} al comunicarse con el servidor`}${detalle}`);
-  }
-  return data;
-};
+// Cliente común (config/apiCliente.js); el mensaje incluye la lista de errores del back para mostrarlo en el formulario.
+const llamarApi = (token, metodo, body) =>
+  llamarApiBase(token, API_USUARIOS, "empresas", { metodo, body }).catch((err) => { throw new Error(textoError(err)); });
 
 const VACIA = {
   nombre: "", rut: "", representante_legal: "", responsable: "", correo_responsable: "",
@@ -33,7 +24,7 @@ const OBLIGATORIOS = [
   ["responsable", "Responsable"], ["gransic_id", "Sistema de gestión (GRANSIC)"],
 ];
 
-const inputCls = "w-full bg-gray-100 p-2.5 text-sm rounded-lg focus:outline-none";
+const inputCls = "w-full campo";
 
 // Empresa → datos que faltan para declarar (nombres de campo legibles).
 const faltantesDeclaracion = (e) => OBLIGATORIOS.filter(([k]) => !String(e?.[k] ?? "").trim()).map(([, n]) => n);
@@ -131,8 +122,8 @@ const FormularioEmpresa = ({ inicial, gransicList, puedeGransic, onGuardar, onCe
           {errorGeneral && <p className="text-sm text-red-600">{errorGeneral}</p>}
         </div>
         <div className="flex justify-end gap-3 px-6 py-4 border-t">
-          <button type="button" onClick={onCerrar} disabled={guardando} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
-          <button type="submit" disabled={guardando} className="inline-flex items-center gap-2 bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker disabled:bg-gray-400">
+          <button type="button" onClick={onCerrar} disabled={guardando} className="btn-secundario">Cancelar</button>
+          <button type="submit" disabled={guardando} className="btn-principal">
             {guardando && <Loader2 className="w-4 h-4 animate-spin" />} {editando ? "Guardar cambios" : "Crear empresa"}
           </button>
         </div>
@@ -186,7 +177,7 @@ const Empresas = () => {
       <div className="bg-white p-6 rounded-lg shadow-sm">
         <div className="flex flex-wrap items-center gap-3 mb-4">
           {esDev && (
-            <button onClick={() => setEditando({})} className="inline-flex items-center gap-2 bg-primary-dark text-white px-4 py-2 rounded-lg hover:bg-primary-darker text-sm">
+            <button onClick={() => setEditando({})} className="btn-principal">
               <Plus className="w-4 h-4" /> Nueva empresa
             </button>
           )}

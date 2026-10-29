@@ -218,7 +218,7 @@ const CargaMasivaMatriz = ({ gransic, catalogos, productos, puedeEditar, claveCo
         onClick={() => inputRef.current?.click()}
         disabled={!puedeEditar || paso === "leyendo"}
         title={puedeEditar ? "Cargar productos desde un archivo Excel o CSV" : "Tu perfil solo permite consultar la matriz"}
-        className="ml-auto flex items-center gap-2 bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50 disabled:text-gray-400 disabled:border-gray-300 disabled:cursor-not-allowed"
+        className="btn-secundario ml-auto"
       >
         {paso === "leyendo" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Carga masiva
       </button>
@@ -230,8 +230,8 @@ const CargaMasivaMatriz = ({ gransic, catalogos, productos, puedeEditar, claveCo
           onCerrar={cerrar}
           pie={(
             <>
-              <button onClick={cerrar} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cerrar</button>
-              <button onClick={() => inputRef.current?.click()} className="bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker">Elegir otro archivo</button>
+              <button onClick={cerrar} className="btn-secundario">Cerrar</button>
+              <button onClick={() => inputRef.current?.click()} className="btn-principal">Elegir otro archivo</button>
             </>
           )}
         >
@@ -257,8 +257,8 @@ const CargaMasivaMatriz = ({ gransic, catalogos, productos, puedeEditar, claveCo
               {intento && faltantes.length > 0 && (
                 <p className="mr-auto self-center text-sm text-red-600">Falta asignar: {faltantes.map((b) => b.label).join(", ")}.</p>
               )}
-              <button onClick={cerrar} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
-              <button onClick={confirmarAsignacion} className="bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker">Confirmar asignación</button>
+              <button onClick={cerrar} className="btn-secundario">Cancelar</button>
+              <button onClick={confirmarAsignacion} className="btn-principal">Confirmar asignación</button>
             </>
           )}
         >
@@ -377,11 +377,11 @@ const CargaMasivaMatriz = ({ gransic, catalogos, productos, puedeEditar, claveCo
           onCerrar={cerrar}
           pie={(
             <>
-              <button onClick={() => setPaso("asignar")} className="mr-auto bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">
+              <button onClick={() => setPaso("asignar")} className="btn-secundario mr-auto">
                 Volver a la asignación
               </button>
-              <button onClick={cerrar} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
-              <button onClick={revisar} className="bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker">Revisar contenido</button>
+              <button onClick={cerrar} className="btn-secundario">Cancelar</button>
+              <button onClick={revisar} className="btn-principal">Revisar contenido</button>
             </>
           )}
         >
@@ -430,7 +430,7 @@ const CargaMasivaMatriz = ({ gransic, catalogos, productos, puedeEditar, claveCo
             {mostradas < archivo.filas.length && (
               <button
                 onClick={() => setMostradas((m) => m + FILAS_POR_PAGINA)}
-                className="bg-white text-primary-dark border border-primary px-4 py-1.5 rounded-lg hover:bg-green-50"
+                className="btn-secundario btn-chico"
               >
                 Traer {FILAS_POR_PAGINA} más
               </button>
@@ -445,18 +445,18 @@ const CargaMasivaMatriz = ({ gransic, catalogos, productos, puedeEditar, claveCo
           onCerrar={cerrar}
           pie={(
             <>
-              <button onClick={() => setPaso("vista")} className="mr-auto bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">
+              <button onClick={() => setPaso("vista")} className="btn-secundario mr-auto">
                 Volver a la vista previa
               </button>
               {errorGuardar && <p className="basis-full text-sm text-red-600">No se pudo guardar: {errorGuardar}</p>}
               {pendientes > 0 && (
                 <p className="text-sm text-yellow-700">Decide qué hacer con {pendientes} componente{pendientes === 1 ? "" : "s"} que no viene{pendientes === 1 ? "" : "n"} en el archivo.</p>
               )}
-              <button onClick={cerrar} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
+              <button onClick={cerrar} className="btn-secundario">Cancelar</button>
               <button
                 onClick={() => (hayNuevosValores ? setPaso("nuevos") : guardar())}
                 disabled={aGuardar.length === 0 || pendientes > 0 || guardando}
-                className="bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="btn-principal"
               >
                 {guardando ? "Guardando…" : `Guardar ${aGuardar.length} producto${aGuardar.length === 1 ? "" : "s"}`}
               </button>
@@ -481,10 +481,10 @@ const CargaMasivaMatriz = ({ gransic, catalogos, productos, puedeEditar, claveCo
           onCerrar={cerrar}
           pie={(
             <>
-              <button onClick={() => setPaso("revision")} disabled={guardando} className="mr-auto bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">
+              <button onClick={() => setPaso("revision")} disabled={guardando} className="btn-secundario mr-auto">
                 Volver a la revisión
               </button>
-              <button onClick={guardar} disabled={guardando} className="bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker disabled:bg-gray-400">
+              <button onClick={guardar} disabled={guardando} className="btn-principal">
                 {guardando ? "Guardando…" : "Agregar y guardar"}
               </button>
             </>

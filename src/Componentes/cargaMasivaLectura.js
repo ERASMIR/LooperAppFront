@@ -1,4 +1,6 @@
-import * as XLSX from "xlsx";
+// La librería xlsx (~400 KB) se descarga recién al leer o generar un archivo (auditoría UI, RC-01), no al entrar a la app.
+let xlsxCargado = null;
+const cargarXlsx = () => (xlsxCargado ??= import("xlsx"));
 import { normalizar } from "./cargaMasivaRevision.js";
 
 // Funciones comunes de las cargas masivas (Matriz de Materiales y Registro de Ventas): lectura del archivo en el
@@ -8,7 +10,7 @@ export const EXTENSIONES = ".xlsx,.xls,.csv";
 export const FILAS_POR_PAGINA = 10;
 const TAMANO_MAX_MB = 10;
 
-export const inputCls = "w-full bg-gray-100 p-2.5 text-sm rounded-lg disabled:text-gray-400 disabled:cursor-not-allowed";
+export const inputCls = "w-full campo";
 
 // En la vista previa, los decimales de Excel se muestran con coma y hasta 6 decimales; el dato leído no cambia.
 export const mostrarValor = (v) =>
@@ -45,7 +47,7 @@ const textoCsv = (buffer) => {
 };
 
 // Copia el valor de cada rango de celdas combinadas a todas sus celdas (p. ej. un SKU combinado sobre varias filas).
-const descombinar = (hoja) => {
+const descombinar = (XLSX, hoja) => {
   for (const { s, e } of hoja["!merges"] || []) {
     const origen = hoja[XLSX.utils.encode_cell(s)];
     if (!origen) continue;
@@ -64,7 +66,7 @@ export const leerArchivo = async (archivo, contenido) => {
   if (!["xlsx", "xls", "csv"].includes(extension)) throw new Error("El archivo debe ser Excel (.xlsx, .xls) o CSV (.csv).");
   if (archivo.size > TAMANO_MAX_MB * 1024 * 1024) throw new Error(`El archivo supera ${TAMANO_MAX_MB} MB.`);
 
-  const buffer = await archivo.arrayBuffer();
+  const [XLSX, buffer] = await Promise.all([cargarXlsx(), archivo.arrayBuffer()]);
   // raw: los textos del CSV se mantienen tal cual (SKU con ceros a la izquierda, decimales con coma).
   const libro = extension === "csv"
     ? XLSX.read(textoCsv(buffer), { type: "string", raw: true })
@@ -75,7 +77,7 @@ export const leerArchivo = async (archivo, contenido) => {
   }
   const hoja = libro.Sheets[libro.SheetNames[0]];
   const combinadas = (hoja["!merges"] || []).length;
-  descombinar(hoja);
+  descombinar(XLSX, hoja);
 
   if (!hoja["!ref"]) throw new Error("El archivo está vacío.");
   // range: 0 → se lee desde la fila 1 aunque esté vacía (si no, la librería parte en la primera fila con datos
@@ -111,7 +113,8 @@ export const leerArchivo = async (archivo, contenido) => {
 };
 
 // Descarga el reporte de errores como Excel. columnas: [[encabezado, clave, ancho]].
-export const descargarErrores = (archivo, errores, columnas) => {
+export const descargarErrores = async (archivo, errores, columnas) => {
+  const XLSX = await cargarXlsx();
   const hoja = XLSX.utils.json_to_sheet(errores.map((e) => Object.fromEntries(columnas.map(([titulo, clave]) => [titulo, e[clave]]))));
   hoja["!cols"] = columnas.map(([, , wch]) => ({ wch }));
   const libro = XLSX.utils.book_new();

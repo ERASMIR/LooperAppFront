@@ -173,11 +173,11 @@ const FormularioVenta = ({
           {intento && Object.keys(revision.errores).length > 0 && (
             <p className="mr-auto text-sm text-red-600">{revision.errores.general || "Revisa los datos marcados."}</p>
           )}
-          <button onClick={onCerrar} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
+          <button onClick={onCerrar} className="btn-secundario">Cancelar</button>
           <button
             onClick={guardar}
             disabled={guardando}
-            className="bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="btn-principal"
           >
             {guardando ? "Guardando…" : venta ? "Guardar cambios" : "Agregar venta"}
           </button>

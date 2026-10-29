@@ -40,7 +40,7 @@ export const Paginado = ({ total, mostradas, onMas, texto }) => (
   <div className="flex items-center justify-between gap-3 mt-2 text-sm text-neutral-500">
     <span>Mostrando {Math.min(mostradas, total)} de {total} {texto}</span>
     {mostradas < total && (
-      <button onClick={onMas} className="bg-white text-primary-dark border border-primary px-4 py-1.5 rounded-lg hover:bg-green-50">
+      <button onClick={onMas} className="btn-secundario btn-chico">
         Traer {FILAS_POR_PAGINA} más
       </button>
     )}

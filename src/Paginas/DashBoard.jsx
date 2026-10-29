@@ -7,6 +7,7 @@ import {
 } from 'chart.js';
 import { AuthContext } from "../context/AuthContext";
 import { API_REPORTES } from "../config/api";
+import { llamarApi } from "../config/apiCliente.js";
 import { MESES } from "../Componentes/ventasRevision.js";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
@@ -53,7 +54,8 @@ const SumatoriaPanel = ({ filas, tienePeligrosidad, categorias, filtroCategoria,
           <button
             key={c || "todas"}
             onClick={() => setFiltroCategoria(c)}
-            className={`px-3 py-1 rounded-md text-sm font-medium border transition capitalize ${filtroCategoria === c ? "bg-primary-dark text-white" : "hover:bg-neutral-100"}`}
+            aria-pressed={filtroCategoria === c}
+            className={`chip capitalize ${filtroCategoria === c ? "chip-activo" : ""}`}
           >
             {c || "Todas"}
           </button>
@@ -171,12 +173,7 @@ function Dashboard() {
     setError("");
     try {
       const p = (x) => `${x.anio}-${String(x.mes).padStart(2, "0")}`;
-      const res = await fetch(`${API_REPORTES}/reportes/resumen?empresaId=${empresaId}&desde=${p(rango.desde)}&hasta=${p(rango.hasta)}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(data?.error || `Error ${res.status} al consultar los reportes`);
-      setResumen(data);
+      setResumen(await llamarApi(token, API_REPORTES, `reportes/resumen?empresaId=${empresaId}&desde=${p(rango.desde)}&hasta=${p(rango.hasta)}`));
       setFiltroCategoria("");
     } catch (err) {
       setError(err.message);
@@ -195,7 +192,7 @@ function Dashboard() {
     && (m.toneladasPeligroso || 0) + (m.toneladasNoPeligroso || 0) + (m.toneladasTotal || 0) > 0), [resumen, filtroCategoria]);
 
   const cambiar = (extremo, campo) => (e) => setRango((r) => ({ ...r, [extremo]: { ...r[extremo], [campo]: Number(e.target.value) } }));
-  const selectCls = "border rounded-md px-2 py-1 text-sm";
+  const selectCls = "campo py-1.5";
 
   const totalPeriodos = resumen ? resumen.periodos.length + resumen.faltantes.length : 0;
   const panelStyle = (abierto, crecer) => ({
@@ -230,7 +227,7 @@ function Dashboard() {
         <button
           onClick={consultar}
           disabled={cargando}
-          className="inline-flex items-center gap-2 bg-primary-dark text-white font-semibold px-4 py-2 rounded-md hover:bg-primary-darker transition disabled:bg-neutral-400"
+          className="btn-principal"
         >
           {cargando && <Loader2 className="w-4 h-4 animate-spin" />} {cargando ? "Consultando…" : "Consultar"}
         </button>

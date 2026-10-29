@@ -227,7 +227,7 @@ const CargaMasivaVentas = ({
         onClick={() => inputRef.current?.click()}
         disabled={!puedeCargar || paso === "leyendo"}
         title={puedeCargar ? `Cargar las ventas de ${nombrePeriodo(periodo)} desde un archivo Excel o CSV` : motivoNoCargar}
-        className="flex items-center gap-2 bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50 disabled:text-gray-400 disabled:border-gray-300 disabled:cursor-not-allowed"
+        className="btn-secundario"
       >
         {paso === "leyendo" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Carga masiva
       </button>
@@ -239,8 +239,8 @@ const CargaMasivaVentas = ({
           onCerrar={cerrar}
           pie={(
             <>
-              <button onClick={cerrar} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cerrar</button>
-              <button onClick={() => inputRef.current?.click()} className="bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker">Elegir otro archivo</button>
+              <button onClick={cerrar} className="btn-secundario">Cerrar</button>
+              <button onClick={() => inputRef.current?.click()} className="btn-principal">Elegir otro archivo</button>
             </>
           )}
         >
@@ -268,8 +268,8 @@ const CargaMasivaVentas = ({
                   Falta asignar: {[...faltantes.map((b) => b.label), ...(FOLIOS_ASIGNADOS(asignacion) ? [] : ["un documento (factura, guía o boleta)"])].join(", ")}.
                 </p>
               )}
-              <button onClick={cerrar} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
-              <button onClick={confirmarAsignacion} className="bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker">Confirmar asignación</button>
+              <button onClick={cerrar} className="btn-secundario">Cancelar</button>
+              <button onClick={confirmarAsignacion} className="btn-principal">Confirmar asignación</button>
             </>
           )}
         >
@@ -380,11 +380,11 @@ const CargaMasivaVentas = ({
           onCerrar={cerrar}
           pie={(
             <>
-              <button onClick={() => setPaso("asignar")} className="mr-auto bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">
+              <button onClick={() => setPaso("asignar")} className="btn-secundario mr-auto">
                 Volver a la asignación
               </button>
-              <button onClick={cerrar} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
-              <button onClick={revisar} className="bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker">Revisar contenido</button>
+              <button onClick={cerrar} className="btn-secundario">Cancelar</button>
+              <button onClick={revisar} className="btn-principal">Revisar contenido</button>
             </>
           )}
         >
@@ -436,7 +436,7 @@ const CargaMasivaVentas = ({
           onCerrar={cerrar}
           pie={(
             <>
-              <button onClick={() => setPaso("vista")} className="mr-auto bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">
+              <button onClick={() => setPaso("vista")} className="btn-secundario mr-auto">
                 Volver a la vista previa
               </button>
               {errorGuardar && <p className="basis-full text-sm text-red-600">No se pudo guardar: {errorGuardar}</p>}
@@ -447,11 +447,11 @@ const CargaMasivaVentas = ({
               {revision.errores.length === 0 && !bloqueaAjenas && requiereAutorizacion && !autorizado && (
                 <p className="text-sm text-yellow-700">Autoriza el reemplazo para guardar.</p>
               )}
-              <button onClick={cerrar} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
+              <button onClick={cerrar} className="btn-secundario">Cancelar</button>
               <button
                 onClick={guardar}
                 disabled={!puedeGuardar}
-                className="bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="btn-principal"
               >
                 {guardando ? "Guardando…" : `Guardar ${plural(revision.lineas.length, "línea", "líneas")}`}
               </button>

@@ -2,6 +2,7 @@ import React, { useCallback, useContext, useEffect, useMemo, useState } from "re
 import Dialogo from "../Componentes/Dialogo.jsx";
 import { AuthContext } from "../context/AuthContext.jsx";
 import { API_MATERIALES } from "../config/api";
+import { llamarApi as llamarApiBase } from "../config/apiCliente.js";
 import CargaMasivaMatriz from "../Componentes/CargaMasivaMatriz.jsx";
 import { EncabezadoAjustable, ModalColumnas } from "../Componentes/columnasTabla.jsx";
 import { useVistaTabla } from "../Componentes/useVistaTabla.js";
@@ -94,25 +95,11 @@ const formatoKg = (n) => n.toLocaleString("es-CL", { maximumFractionDigits: 4 })
 const formatoTon = (n) => n.toLocaleString("es-CL", { minimumFractionDigits: 6, maximumFractionDigits: 6 });
 const etiquetaTipo = (tipo) => TIPOS_ADJUNTO.find((t) => t.value === tipo)?.label || tipo;
 
-const inputCls = "w-full bg-gray-100 p-2.5 text-sm rounded-lg disabled:text-gray-400 disabled:cursor-not-allowed";
+const inputCls = "w-full campo";
 const labelCls = "block font-semibold text-sm mb-1";
 
-// ── API looper-materiales ─────────────────────────────────────────────────────
-// Envía el JWT de la sesión. Si falla, lanza un Error con el mensaje del back y su lista de errores.
-const llamarApi = async (token, ruta, { metodo = "GET", body } = {}) => {
-  const res = await fetch(`${API_MATERIALES}/${ruta}`, {
-    method: metodo,
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const data = await res.json().catch(() => null);
-  if (!res.ok) {
-    const err = new Error(data?.error || `Error ${res.status} al comunicarse con el servidor`);
-    err.errores = data?.errores || [];
-    throw err;
-  }
-  return data;
-};
+// ── API looper-materiales (cliente común en config/apiCliente.js) ─────────────
+const llamarApi = (token, ruta, opciones) => llamarApiBase(token, API_MATERIALES, ruta, opciones);
 
 const aBase64 = (archivo) =>
   new Promise((resolve, reject) => {
@@ -203,8 +190,8 @@ const ModalNuevo = ({ titulo, campos, onGuardar, onCerrar, existentes }) => {
         {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
       <div className="flex justify-end gap-3 mt-6">
-        <button onClick={onCerrar} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
-        <button onClick={guardar} disabled={guardando} className="bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker disabled:bg-gray-400">
+        <button onClick={onCerrar} className="btn-secundario">Cancelar</button>
+        <button onClick={guardar} disabled={guardando} className="btn-principal">
           {guardando ? "Guardando…" : "Agregar"}
         </button>
       </div>
@@ -235,7 +222,7 @@ const ModalConfirmar = ({ titulo, children, textoConfirmar, peligro, onConfirmar
       </div>
       {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
       <div className="flex justify-end gap-3 mt-6">
-        <button onClick={onCerrar} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
+        <button onClick={onCerrar} className="btn-secundario">Cancelar</button>
         <button
           onClick={confirmar}
           disabled={enCurso}
@@ -302,7 +289,7 @@ const ModalGestionarCampos = ({ campos, onRenombrar, onEliminar, onCerrar }) => 
                   autoFocus
                   className={inputCls}
                 />
-                <button onClick={() => guardarNombre(c)} disabled={enCurso} className="px-3 rounded-lg bg-primary-dark text-white text-sm hover:bg-primary-darker disabled:bg-gray-400">
+                <button onClick={() => guardarNombre(c)} disabled={enCurso} className="btn-principal">
                   Guardar
                 </button>
                 <button onClick={() => { setEditandoId(null); setError(""); }} title="Cancelar" className="p-1.5 rounded-full hover:bg-gray-100">
@@ -313,7 +300,7 @@ const ModalGestionarCampos = ({ campos, onRenombrar, onEliminar, onCerrar }) => 
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <span className="flex-1">¿Eliminar <b>{c.nombre}</b>?</span>
                 <button onClick={() => setEliminandoId(null)} className="px-3 py-1 rounded-lg border border-primary text-primary-dark hover:bg-green-50">Cancelar</button>
-                <button onClick={() => ejecutar(() => onEliminar(c.id))} disabled={enCurso} className="px-3 py-1 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-400">
+                <button onClick={() => ejecutar(() => onEliminar(c.id))} disabled={enCurso} className="btn-peligro btn-chico">
                   Eliminar
                 </button>
               </div>
@@ -341,7 +328,7 @@ const ModalGestionarCampos = ({ campos, onRenombrar, onEliminar, onCerrar }) => 
       </ul>
       {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
       <div className="flex justify-end mt-6">
-        <button onClick={onCerrar} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cerrar</button>
+        <button onClick={onCerrar} className="btn-secundario">Cerrar</button>
       </div>
     </Modal>
   );
@@ -362,10 +349,11 @@ const ListadoProductos = ({
 
   // ancho: por defecto (px). render(p): contenido de la celda.
   const columnas = [
-    { id: "sku", label: "SKU", fija: true, ancho: 170, render: (p) => (
-      <span className="font-medium">
-        {p.sku}
-        {p.version > 1 && <span className="ml-1.5 text-xs text-neutral-500" title="Versión de la matriz">v{p.version}</span>}
+    // VI-05: el SKU no se corta en dos líneas (si no cabe, "…" y el SKU completo al pasar el mouse).
+    { id: "sku", label: "SKU", fija: true, ancho: 200, render: (p) => (
+      <span className="flex items-baseline gap-1.5 min-w-0 font-medium" title={p.sku}>
+        <span className="truncate">{p.sku}</span>
+        {p.version > 1 && <span className="flex-shrink-0 text-xs text-neutral-500" title="Versión de la matriz">v{p.version}</span>}
       </span>
     ) },
     { id: "descripcion", label: "Descripción", fija: true, ancho: 240, render: (p) => p.descripcion },
@@ -383,10 +371,11 @@ const ListadoProductos = ({
       </div>
     ) },
     // Fecha de la versión vigente: cada cambio crea una versión (formulario o carga masiva).
-    { id: "actualizado", label: "Última actualización", ancho: 190, render: (p) => (
-      <span className="block text-xs leading-5" title={`Versión ${p.version}`}>
-        <span className="text-sm text-neutral-800">{formatoFecha(p.actualizadoFecha)}</span><br />
-        {p.actualizadoPor || "—"} · {ORIGENES[p.origen] || p.origen}
+    // VI-05: fecha en una línea y "usuario · origen" en otra, recortada si no cabe (antes ocupaba hasta 3 líneas).
+    { id: "actualizado", label: "Última actualización", ancho: 210, render: (p) => (
+      <span className="block min-w-0 leading-5" title={`Versión ${p.version} · ${p.actualizadoPor || "—"} · ${ORIGENES[p.origen] || p.origen}`}>
+        <span className="block whitespace-nowrap text-neutral-800">{formatoFecha(p.actualizadoFecha)}</span>
+        <span className="block truncate text-xs text-neutral-500">{p.actualizadoPor || "—"} · {ORIGENES[p.origen] || p.origen}</span>
       </span>
     ) },
     { id: "adjunto", label: "Adjunto", ancho: 180, render: (p) => (p.adjunto ? (
@@ -431,12 +420,12 @@ const ListadoProductos = ({
             onChange={(e) => { setBusqueda(e.target.value); setPagina(1); }}
             aria-label="Buscar por SKU o descripción"
             placeholder="Buscar por SKU o descripción"
-            className="w-full bg-gray-100 pl-9 p-2.5 text-sm rounded-lg"
+            className="w-full campo pl-9"
           />
         </div>
         <button
           onClick={() => setEditandoColumnas(true)}
-          className="flex items-center gap-2 bg-white text-primary-dark border border-primary px-4 py-2 rounded-lg hover:bg-green-50 text-sm"
+          className="btn-secundario"
         >
           <Columns3 className="w-4 h-4" /> Columnas
         </button>
@@ -475,7 +464,7 @@ const ListadoProductos = ({
                       {abierto === p.id ? <ChevronDown className="w-4 h-4" aria-hidden="true" /> : <ChevronRight className="w-4 h-4" aria-hidden="true" />}
                     </button>
                   </td>
-                  {visibles.map((c) => <td key={c.id} className="p-3 break-words">{c.render(p)}</td>)}
+                  {visibles.map((c) => <td key={c.id} className="p-3 break-words overflow-hidden">{c.render(p)}</td>)}
                   {puedeEditar && (
                     <td className="p-3">
                       <div className="flex gap-1 justify-end">
@@ -590,7 +579,8 @@ const CrearProducto = ({
   claveCargaMasiva, onCargaMasiva,
 }) => {
   const editando = !!inicial;
-  const [activo, setActivo] = useState(editando);
+  // VI-01: la pestaña "Nuevo producto" abre el formulario listo para escribir (antes había que pulsar un segundo botón).
+  const activo = editando || puedeEditar;
   const [producto, setProducto] = useState(inicial || productoVacio());
   const [errores, setErrores] = useState([]);
   const [guardando, setGuardando] = useState(false);
@@ -693,7 +683,6 @@ const CrearProducto = ({
   const reiniciar = () => {
     setProducto(productoVacio());
     setErrores([]);
-    setActivo(false);
   };
 
   const cancelar = () => (editando ? onCancelarEdicion() : reiniciar());
@@ -721,14 +710,8 @@ const CrearProducto = ({
             Editando <b>{inicial.sku}</b> (versión {inicial.version}, actualizada el {formatoFecha(inicial.actualizadoFecha)}).
             {" "}Si cambias algún dato, al guardar se crea la versión {inicial.version + 1} y la actual queda en el historial.
           </p>
-        ) : (
-          <button
-            onClick={() => setActivo(true)}
-            disabled={!puedeEditar || activo}
-            className="flex items-center gap-2 bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker disabled:bg-gray-400"
-          >
-            <Plus className="w-4 h-4" /> Crear nuevo producto
-          </button>
+        ) : puedeEditar && (
+          <p className="text-sm text-neutral-600">Completa los datos del producto o cárgalos desde un archivo con Carga masiva.</p>
         )}
         {!puedeEditar && <span className="text-sm text-neutral-500">Tu perfil solo permite consultar la matriz.</span>}
         {!editando && (
@@ -958,7 +941,7 @@ const CrearProducto = ({
           <button
             type="button"
             onClick={() => set("unidades", [...producto.unidades, unidadVacia()])}
-            className="bg-white text-primary-dark border border-primary px-4 py-2 rounded-lg hover:bg-green-50 flex items-center gap-1 text-sm"
+            className="btn-secundario"
           >
             <Plus className="w-4 h-4" /> Agregar otra unidad de venta
           </button>
@@ -980,7 +963,7 @@ const CrearProducto = ({
                   <button
                     type="button"
                     onClick={onGestionarCampos}
-                    className="bg-white text-primary-dark border border-primary px-4 py-2 rounded-lg hover:bg-green-50 text-sm"
+                    className="btn-secundario"
                   >
                     Gestionar campos
                   </button>
@@ -988,7 +971,7 @@ const CrearProducto = ({
                 <button
                   type="button"
                   onClick={() => abrirModal("campo", (id, campo) => !esDeComponente(campo) && setCampoAdicional(id, campo.valor))}
-                  className="bg-white text-primary-dark border border-primary px-4 py-2 rounded-lg hover:bg-green-50 flex items-center gap-1 text-sm"
+                  className="btn-secundario"
                 >
                   <Plus className="w-4 h-4" /> Nuevo campo
                 </button>
@@ -1064,8 +1047,8 @@ const CrearProducto = ({
         )}
 
         <div className="flex justify-end gap-3">
-          <button type="button" onClick={cancelar} className="bg-white text-primary-dark border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
-          <button type="button" onClick={guardar} className="bg-primary-dark text-white px-5 py-2 rounded-lg hover:bg-primary-darker disabled:bg-gray-400">
+          <button type="button" onClick={cancelar} className="btn-secundario">Cancelar</button>
+          <button type="button" onClick={guardar} className="btn-principal">
             {guardando ? "Guardando…" : editando ? "Guardar nueva versión" : "Guardar producto"}
           </button>
         </div>
@@ -1314,17 +1297,18 @@ const MatrizMateriales = () => {
   } else {
     contenido = (
       <>
-        <div className="flex flex-wrap items-center gap-4 mb-6">
-          {[["listado", "Listado de productos"], ["crear", edicion ? "Editar producto" : "Crear nuevo producto"]].map(([id, label]) => (
+        <div className="flex flex-wrap items-end gap-2 mb-6 border-b border-neutral-200">
+          {[["listado", "Listado de productos"], ["crear", edicion ? "Editar producto" : "Nuevo producto"]].map(([id, label]) => (
             <button
               key={id}
               onClick={() => setPestana(id)}
-              className={`px-4 py-2 text-sm rounded-xl transition ${pestana === id ? "bg-primary-dark text-white" : "bg-gray-200 hover:bg-gray-300"}`}
+              aria-current={pestana === id ? "page" : undefined}
+              className={`pestana ${pestana === id ? "pestana-activa" : ""}`}
             >
               {label}
             </button>
           ))}
-          <span className="ml-auto text-sm text-neutral-500">Sistema de gestión: <b>{gransic.nombre}</b></span>
+          <span className="ml-auto pb-2 text-sm text-neutral-500">Sistema de gestión: <b>{gransic.nombre}</b></span>
         </div>
 
         {aviso && (
