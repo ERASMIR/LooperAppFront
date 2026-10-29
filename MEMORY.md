@@ -98,3 +98,11 @@ Lo transversal (BD, entorno, decisiones que cruzan servicios) va en `../MEMORY.m
 - 2026-10-28: **corregido (con OK de la persona) error de producción: recargar la página cerraba la sesión.** `AuthContext.jsx`
   leía la sesión de localStorage en un `useEffect`, y `PrivateRoute` redirigía al login antes. Ahora se lee en el estado
   inicial. ReportePeriodo: historial de reportes (vigentes y eliminados) con "Ver".
+- 2026-10-29 (T8.6 fase 4): ReportePeriodo conectado a looper-reportes, sin `SIMULADO`. `API_REPORTES` en `api.js` (OK de la
+  persona) y `/api-reportes` → 7077 en `vite.config.local.js`. Vigente del periodo: `GET reportes?anio&mes` (con materiales);
+  historial: `GET reportes?empresaId` (sin materiales: usa `toneladasTotal`; la ventana pide el detalle al abrirse).
+  Sin el reporte guardado en la BD no hay bloqueo de ventas: por eso en la fase 1 el bloqueo "no funcionaba".
+- 2026-10-29: `Paginas/Empresas.jsx` en `/empresas` (reemplaza `CreacionEmpresa.jsx`, borrado; `/crear-empresa` redirige):
+  dev lista/crea/edita todas, admin edita la suya sin GRANSIC; usa `/api/empresas` de looper-usuarios (con JWT). Menú:
+  "Empresas" (dev) / "Datos de la Empresa" (admin). ReportePeriodo: botón "Reporte ReSimple .xlsx" (descarga con fetch+blob,
+  nombre desde Content-Disposition; errores junto al botón). Plan: `specs/003-reporte/plantilla-resimple.md`.

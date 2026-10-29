@@ -14,7 +14,7 @@ import Tutoriales from './Paginas/Tutoriales';
 import Soporte from './Paginas/Soporte'; // Importa el nuevo componente
 import DatosUsuario from './Paginas/DatosUsuario';
 import CreacionUsuario from './Paginas/CreacionUsuario';
-import CreacionEmpresa from './Paginas/CreacionEmpresa';
+import Empresas from './Paginas/Empresas';
 import Dashboard from './Paginas/DashBoard';
 import Ecologica from './Paginas/ValidEcologica';
 import PrivateRoute from './Componentes/PrivateRoute';
@@ -79,7 +79,9 @@ function App() {
           <Route path="/soporte" element={<PrivateRoute><Soporte /></PrivateRoute>} />
           <Route path="/datos-usuario" element={<PrivateRoute><DatosUsuario /></PrivateRoute>} />
           <Route path="/creacion-usuario" element={<PrivateRoute allowedProfiles={['dev']}><CreacionUsuario /></PrivateRoute>} />
-          <Route path="/crear-empresa" element={<PrivateRoute allowedProfiles={['dev']}><CreacionEmpresa /></PrivateRoute>} />
+          {/* Empresas: dev crea y edita todas; admin edita la suya (datos para declarar). Reemplaza a /crear-empresa. */}
+          <Route path="/empresas" element={<PrivateRoute allowedProfiles={['admin', 'dev']}><Empresas /></PrivateRoute>} />
+          <Route path="/crear-empresa" element={<Navigate to="/empresas" replace />} />
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/validacion-ecologica" element={<PrivateRoute><Ecologica /></PrivateRoute>} />
           <Route path="/gestion-usuarios" element={<PrivateRoute allowedProfiles={['dev']}><GestionUsuarios /></PrivateRoute>} />

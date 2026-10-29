@@ -1,36 +1,32 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { AuthContext } from "../context/AuthContext.jsx";
-import { API_MATERIALES, API_VENTAS } from "../config/api";
+import { API_MATERIALES, API_REPORTES, API_VENTAS } from "../config/api";
 import { MESES, nombrePeriodo } from "../Componentes/ventasRevision.js";
-import { Loader2, Lock, AlertTriangle, CheckCircle2, X, Trash2, Calculator, FileCheck2, Info, History } from "lucide-react";
+import { Loader2, Lock, AlertTriangle, CheckCircle2, X, Trash2, Calculator, FileCheck2, FileSpreadsheet, Info, History } from "lucide-react";
 
 // Crear Reporte (T8.6): calcula las toneladas declaradas de un periodo con la Matriz de Materiales y el Registro de Ventas
 // de la BD (sin archivos ni Drive). Procesar = vista previa; confirmar = se guarda y bloquea las ventas del periodo; eliminar
 // el reporte vigente (admin/dev) desbloquea. Plan: specs/003-reporte/plan-trabajo.md
+// El cálculo, el guardado y el bloqueo los hace looper-reportes; aquí solo se muestran.
+// Reporte vigente de ReSimple → descarga de la planilla oficial completa, generada por looper-reportes
+// (specs/003-reporte/plantilla-resimple.md).
+const esReSimple = (gransic) => /resimple/i.test(gransic?.nombre || "");
 
-// ── Fase 1: datos simulados ───────────────────────────────────────────────────
-// Las ventas del periodo y el catálogo GRANSIC son reales (API de ventas y materiales); las toneladas son ficticias y el
-// reporte confirmado vive en memoria (no se guarda ni bloquea nada). En la fase 4 se usa looper-reportes.
-const SIMULADO = true;
-
-// Toneladas ficticias pero estables: uno de cada tres materiales del catálogo, proporcional a las líneas del periodo.
-const simularCalculo = (gransic, ventas) => {
-  const materiales = [];
-  let i = 0;
-  for (const [categoria, lista] of Object.entries(gransic.categorias)) {
-    for (const material of lista) {
-      const base = i % 3 === 0 ? Math.round(ventas.length * 0.0137 * (i + 1) * 1e8) / 1e8 : 0;
-      materiales.push(gransic.tiene_peligrosidad
-        ? { categoria, material, toneladasPeligroso: i % 6 === 0 ? Math.round(base * 0.2 * 1e8) / 1e8 : 0, toneladasNoPeligroso: base, toneladasTotal: null }
-        : { categoria, material, toneladasPeligroso: null, toneladasNoPeligroso: null, toneladasTotal: base });
-      i += 1;
-    }
+// Descarga un archivo de la API (con la sesión) y lo guarda con el nombre que indica el back.
+const descargarArchivo = async (token, url, nombrePorDefecto) => {
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    const detalle = data?.errores?.length ? `: ${data.errores.join(", ")}` : "";
+    throw new Error(`${data?.error || `Error ${res.status} al generar el archivo`}${detalle}`);
   }
-  return {
-    gransic: { nombre: gransic.nombre, tienePeligrosidad: gransic.tiene_peligrosidad },
-    materiales,
-    resumen: { lineas: ventas.length, procesadas: ventas.length, noEncontradas: [] },
-  };
+  const nombre = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") || "")?.[1] || nombrePorDefecto;
+  const enlace = document.createElement("a");
+  enlace.href = URL.createObjectURL(await res.blob());
+  enlace.download = nombre;
+  enlace.click();
+  setTimeout(() => URL.revokeObjectURL(enlace.href), 1000); // liberar después de que el navegador tome la descarga
+  return nombre;
 };
 
 const inputCls = "bg-gray-100 p-2.5 text-sm rounded-lg";
@@ -162,8 +158,9 @@ const Resultado = ({ calculo }) => {
 };
 
 // ── Pestaña "Historial de reportes": una fila por periodo con su reporte vigente (o sin vigente, si se eliminó) ──
+// El historial llega sin materiales: el total viene calculado por el back.
 const toneladasTotales = (r) =>
-  r.materiales.reduce((n, m) => n + (m.toneladasPeligroso || 0) + (m.toneladasNoPeligroso || 0) + (m.toneladasTotal || 0), 0);
+  r.toneladasTotal ?? r.materiales.reduce((n, m) => n + (m.toneladasPeligroso || 0) + (m.toneladasNoPeligroso || 0) + (m.toneladasTotal || 0), 0);
 const clavePeriodo = ({ anio, mes }) => `${anio}-${mes}`;
 
 // Reportes agrupados por periodo (el más reciente primero): { anio, mes, vigente, versiones (la más reciente primero) }.
@@ -230,8 +227,25 @@ const ListadoReportes = ({ periodos, puedeEliminar, onAbrir, onEliminar }) => (
 );
 
 // Ventana con el reporte de un periodo: datos y resultados del vigente (el declarado) y, abajo, las versiones anteriores
-// del mismo periodo (sin resultados).
-const VentanaReporte = ({ grupo, puedeEliminar, onEliminar, onCerrar }) => {
+// del mismo periodo (sin resultados). detalle: el vigente con sus materiales (null mientras se carga).
+// Botón de la planilla oficial de ReSimple (solo para reportes vigentes de ReSimple), con su descripción arriba.
+const BotonPlanillaReSimple = ({ reporte, descargando, error, onDescargar }) => (
+  esReSimple(reporte?.gransic) && !reporte.eliminado ? (
+    <div className="basis-full flex flex-col items-start gap-1.5 border-t border-green-200 pt-3">
+      <p className="text-sm text-neutral-700">Planilla oficial de ReSimple con este reporte, lista para cargarla en ReSimple y hacer la declaración.</p>
+      <button
+        onClick={() => onDescargar(reporte)}
+        disabled={descargando}
+        className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm disabled:bg-gray-400"
+      >
+        {descargando ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />} Reporte ReSimple .xlsx
+      </button>
+      {error && <p className="text-sm text-red-600 flex items-center gap-1"><AlertTriangle className="w-4 h-4 flex-shrink-0" /> {error}</p>}
+    </div>
+  ) : null
+);
+
+const VentanaReporte = ({ grupo, detalle, puedeEliminar, onEliminar, onCerrar, descargando, errorDescarga, onDescargar }) => {
   const { vigente, versiones } = grupo;
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
@@ -256,7 +270,10 @@ const VentanaReporte = ({ grupo, puedeEliminar, onEliminar, onCerrar }) => {
           </div>
         </div>
         <div className="px-6 py-5 overflow-y-auto space-y-8">
-          {vigente && <Resultado calculo={vigente} />}
+          <BotonPlanillaReSimple reporte={vigente} descargando={descargando} error={errorDescarga} onDescargar={onDescargar} />
+          {vigente && (detalle
+            ? <Resultado calculo={detalle} />
+            : <p className="flex items-center gap-2 text-neutral-600"><Loader2 className="w-4 h-4 animate-spin" /> Cargando resultados…</p>)}
           <section>
             <h3 className="font-semibold text-neutral-800 flex items-center gap-2 mb-2">
               <History className="w-4 h-4" /> Historial del reporte de {nombrePeriodo(grupo)}: {plural(versiones.length, "vez generado", "veces generado")}
@@ -316,13 +333,18 @@ const ReportePeriodo = () => {
   const [periodo, setPeriodo] = useState(periodoAnterior);
   const [gransic, setGransic] = useState(null);
   const [ventas, setVentas] = useState(null); // ventas vigentes del periodo (para el resumen)
-  const [historial, setHistorial] = useState([]); // simulación: todos los reportes de la empresa (vigentes y eliminados)
+  const [vigente, setVigente] = useState(undefined); // reporte vigente del periodo elegido (null = no hay; undefined = cargando)
+  const [historial, setHistorial] = useState([]); // todos los reportes de la empresa (vigentes y eliminados), sin materiales
   const [abierto, setAbierto] = useState(null); // clave "anio-mes" del periodo abierto en la ventana del reporte
+  const [detalle, setDetalle] = useState(null); // vigente del periodo abierto, con sus materiales
   const [calculo, setCalculo] = useState(null); // vista previa
   const [procesando, setProcesando] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
   const [eliminando, setEliminando] = useState(null); // reporte vigente a eliminar
   const [motivo, setMotivo] = useState("");
+  const [guardando, setGuardando] = useState(false);
+  const [descargando, setDescargando] = useState(false);
+  const [errorDescarga, setErrorDescarga] = useState(""); // se muestra junto al botón (también dentro de la ventana)
   const [error, setError] = useState("");
   const [aviso, setAviso] = useState("");
 
@@ -333,49 +355,115 @@ const ReportePeriodo = () => {
       .catch((err) => setError(err.message));
   }, [token, empresaId]);
 
-  // Al cambiar de periodo: ventas del periodo. Una respuesta tardía no pisa la del periodo elegido.
+  const cargarHistorial = useCallback(() => {
+    llamarApi(token, API_REPORTES, `reportes?empresaId=${empresaId}`)
+      .then((d) => setHistorial(d.reportes))
+      .catch((err) => setError(err.message));
+  }, [token, empresaId]);
+  useEffect(() => { if (token && empresaId) cargarHistorial(); }, [cargarHistorial, token, empresaId]);
+
+  // Al cambiar de periodo: sus ventas y su reporte vigente. Una respuesta tardía no pisa la del periodo elegido.
   const cargarPeriodo = useCallback(() => {
-    let vigente = true;
+    let actual = true;
+    const filtro = `empresaId=${empresaId}&anio=${periodo.anio}&mes=${periodo.mes}`;
     setVentas(null);
+    setVigente(undefined);
     setCalculo(null);
     setError("");
-    llamarApi(token, API_VENTAS, `ventas?empresaId=${empresaId}&anio=${periodo.anio}&mes=${periodo.mes}`)
-      .then((d) => vigente && setVentas(d.ventas))
-      .catch((err) => vigente && setError(err.message));
-    return () => { vigente = false; };
+    setErrorDescarga("");
+    Promise.all([llamarApi(token, API_VENTAS, `ventas?${filtro}`), llamarApi(token, API_REPORTES, `reportes?${filtro}`)])
+      .then(([v, r]) => { if (actual) { setVentas(v.ventas); setVigente(r.reporte); } })
+      .catch((err) => actual && setError(err.message));
+    return () => { actual = false; };
   }, [token, empresaId, periodo]);
   useEffect(() => (token && empresaId ? cargarPeriodo() : undefined), [cargarPeriodo, token, empresaId]);
 
   const periodos = useMemo(() => agruparPorPeriodo(historial), [historial]);
   const grupoAbierto = periodos.find((p) => clavePeriodo(p) === abierto) || null;
-  const vigente = periodos.find((p) => clavePeriodo(p) === clavePeriodo(periodo))?.vigente || null;
+
+  // Ventana del reporte: el historial no trae materiales, se piden al abrirla.
+  useEffect(() => {
+    setDetalle(null);
+    const vigenteAbierto = grupoAbierto?.vigente;
+    if (!vigenteAbierto) return undefined;
+    let actual = true;
+    llamarApi(token, API_REPORTES, `reportes?empresaId=${empresaId}&anio=${vigenteAbierto.anio}&mes=${vigenteAbierto.mes}`)
+      .then((d) => actual && setDetalle(d.reporte))
+      .catch((err) => actual && setError(err.message));
+    return () => { actual = false; };
+  }, [grupoAbierto?.vigente, token, empresaId]);
 
   const procesar = async () => {
     setProcesando(true);
     setError("");
     setAviso("");
-    await new Promise((r) => setTimeout(r, 600)); // simulación: el cálculo real lo hará looper-reportes
-    setCalculo(simularCalculo(gransic, ventas));
-    setProcesando(false);
+    try {
+      const d = await llamarApi(token, API_REPORTES, "reportes/calcular", { metodo: "POST", body: { empresaId, ...periodo } });
+      if (d.vigente) {
+        // Otro usuario lo confirmó mientras tanto: se muestra el vigente en vez de la vista previa.
+        cargarPeriodo();
+        cargarHistorial();
+      } else {
+        setCalculo(d);
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setProcesando(false);
+    }
   };
 
-  const confirmar = () => {
-    const reporte = {
-      ...calculo, id: `sim-${Date.now()}`, ...periodo, creadoPor: user?.name, creadoFecha: new Date().toISOString(), eliminado: null,
-    };
-    setHistorial((h) => [reporte, ...h]);
-    setCalculo(null);
-    setConfirmando(false);
-    setAviso(`Reporte de ${nombrePeriodo(periodo)} confirmado. Las ventas del periodo quedaron bloqueadas (simulado: no se guardó en la BD).`);
+  const confirmar = async () => {
+    setGuardando(true);
+    setError("");
+    try {
+      const d = await llamarApi(token, API_REPORTES, "reportes", { metodo: "POST", body: { empresaId, ...periodo } });
+      setVigente(d.reporte);
+      setCalculo(null);
+      setAviso(`Reporte de ${nombrePeriodo(periodo)} confirmado. Las ventas del periodo quedaron bloqueadas.`);
+      cargarHistorial();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setConfirmando(false);
+      setGuardando(false);
+    }
   };
 
-  const eliminar = () => {
+  const eliminar = async () => {
     const r = eliminando;
-    const eliminado = { fecha: new Date().toISOString(), por: user?.name, motivo: motivo.trim() };
-    setHistorial((h) => h.map((x) => (x.id === r.id ? { ...x, eliminado } : x)));
-    setEliminando(null);
-    setMotivo("");
-    setAviso(`Reporte de ${nombrePeriodo(r)} eliminado. Las ventas del periodo quedaron desbloqueadas y se puede crear un reporte nuevo (simulado).`);
+    setGuardando(true);
+    setError("");
+    try {
+      await llamarApi(token, API_REPORTES, `reportes?empresaId=${empresaId}&id=${r.id}&motivo=${encodeURIComponent(motivo.trim())}`, { metodo: "DELETE" });
+      setEliminando(null);
+      setMotivo("");
+      setAviso(`Reporte de ${nombrePeriodo(r)} eliminado. Las ventas del periodo quedaron desbloqueadas y se puede crear un reporte nuevo.`);
+      if (clavePeriodo(r) === clavePeriodo(periodo)) setVigente(null);
+      cargarHistorial();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const descargarPlanilla = async (r) => {
+    setDescargando(true);
+    setErrorDescarga("");
+    setAviso("");
+    try {
+      const nombre = await descargarArchivo(
+        token,
+        `${API_REPORTES}/reportes/plantillaResimple?empresaId=${empresaId}&id=${r.id}`,
+        `ReSimple_LB_${r.anio}-${String(r.mes).padStart(2, "0")}.xlsx`,
+      );
+      setAviso(`Se descargó ${nombre}: la planilla oficial de ReSimple de ${nombrePeriodo(r)}, lista para cargarla en ReSimple.`);
+    } catch (err) {
+      setErrorDescarga(err.message);
+    } finally {
+      setDescargando(false);
+    }
   };
 
   const anios = useMemo(() => {
@@ -385,7 +473,7 @@ const ReportePeriodo = () => {
   }, []);
 
   let crear;
-  if (!gransic || !ventas) {
+  if (!gransic || !ventas || vigente === undefined) {
     crear = error
       ? <p className="text-red-600">No se pudo cargar el periodo: {error}</p>
       : <p className="flex items-center gap-2 text-neutral-600"><Loader2 className="w-4 h-4 animate-spin" /> Cargando…</p>;
@@ -405,6 +493,7 @@ const ReportePeriodo = () => {
             <Trash2 className="w-4 h-4" /> Eliminar reporte
           </button>
         )}
+        <BotonPlanillaReSimple reporte={vigente} descargando={descargando} error={errorDescarga} onDescargar={descargarPlanilla} />
       </div>
     );
   } else if (calculo) {
@@ -460,8 +549,14 @@ const ReportePeriodo = () => {
                   {label}
                 </button>
               ))}
-              {SIMULADO && <span className="ml-auto text-xs text-neutral-500">Fase 1: toneladas simuladas; los reportes no se guardan en la BD.</span>}
             </div>
+
+            {error && gransic && ventas && (
+              <div className="mb-4 flex items-center gap-2 text-sm rounded-xl px-4 py-2 border text-red-700 bg-red-50 border-red-200">
+                <AlertTriangle className="w-4 h-4" /><span className="flex-1">{error}</span>
+                <button onClick={() => setError("")} className="p-0.5 rounded-full hover:bg-black/5"><X className="w-4 h-4" /></button>
+              </div>
+            )}
 
             {aviso && (
               <div className="mb-4 flex items-center gap-2 text-sm rounded-xl px-4 py-2 border text-green-800 bg-green-50 border-green-200">
@@ -498,7 +593,7 @@ const ReportePeriodo = () => {
       </div>
 
       {grupoAbierto && (
-        <VentanaReporte grupo={grupoAbierto} puedeEliminar={puedeEliminar} onEliminar={setEliminando} onCerrar={() => setAbierto(null)} />
+        <VentanaReporte grupo={grupoAbierto} detalle={detalle} descargando={descargando} errorDescarga={errorDescarga} onDescargar={descargarPlanilla} puedeEliminar={puedeEliminar} onEliminar={setEliminando} onCerrar={() => setAbierto(null)} />
       )}
 
       {confirmando && (
@@ -506,8 +601,10 @@ const ReportePeriodo = () => {
           titulo={`Confirmar reporte de ${nombrePeriodo(periodo)}`}
           pie={(
             <>
-              <button onClick={() => setConfirmando(false)} className="bg-white text-primary border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
-              <button onClick={confirmar} className="bg-primary text-white px-5 py-2 rounded-lg hover:bg-green-700">Confirmar</button>
+              <button onClick={() => setConfirmando(false)} disabled={guardando} className="bg-white text-primary border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
+              <button onClick={confirmar} disabled={guardando} className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400">
+                {guardando && <Loader2 className="w-4 h-4 animate-spin" />} Confirmar
+              </button>
             </>
           )}
         >
@@ -524,8 +621,10 @@ const ReportePeriodo = () => {
           titulo={`Eliminar reporte de ${nombrePeriodo(eliminando)}`}
           pie={(
             <>
-              <button onClick={() => { setEliminando(null); setMotivo(""); }} className="bg-white text-primary border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
-              <button onClick={eliminar} disabled={!motivo.trim()} className="bg-red-600 text-white px-5 py-2 rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed">Eliminar</button>
+              <button onClick={() => { setEliminando(null); setMotivo(""); }} disabled={guardando} className="bg-white text-primary border border-primary px-5 py-2 rounded-lg hover:bg-green-50">Cancelar</button>
+              <button onClick={eliminar} disabled={!motivo.trim() || guardando} className="inline-flex items-center gap-2 bg-red-600 text-white px-5 py-2 rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                {guardando && <Loader2 className="w-4 h-4 animate-spin" />} Eliminar
+              </button>
             </>
           )}
         >

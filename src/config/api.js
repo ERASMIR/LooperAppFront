@@ -26,3 +26,8 @@ export const API_MATERIALES = isProd
 export const API_VENTAS = isProd
   ? 'https://looper-ventas.azurewebsites.net/api'
   : '/api-ventas';
+
+// Reportes por periodo desde la BD (Function looper-reportes; el recurso en Azure aún no existe)
+export const API_REPORTES = isProd
+  ? 'https://looper-reportes.azurewebsites.net/api'
+  : '/api-reportes';

@@ -127,12 +127,12 @@ const Header = () => {
               </Link>
             )}
 
-            {(user.perfil === "dev") && (
+            {(user.perfil === "dev" || user.perfil === "admin") && (
               <Link
-                to="/crear-empresa"
+                to="/empresas"
                 className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
               >
-                Crear Nueva Empresa
+                {user.perfil === "dev" ? "Empresas" : "Datos de la Empresa"}
               </Link>
             )}
 
