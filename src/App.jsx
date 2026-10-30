@@ -13,7 +13,7 @@ import PrivateRoute from './Componentes/PrivateRoute';
 const Home = lazy(() => import('./Paginas/Home'));
 const CrearReporte = lazy(() => import('./Paginas/CrearReporte'));
 const ReportePeriodo = lazy(() => import('./Paginas/ReportePeriodo'));
-const GestDoc = lazy(() => import('./Paginas/GestDoc'));
+// Gestión Archivos (Paginas/GestDoc.jsx) fuera del front desde 2026-10-30: ya no se usa (decisión de la persona).
 const Tutoriales = lazy(() => import('./Paginas/Tutoriales'));
 const Soporte = lazy(() => import('./Paginas/Soporte'));
 const DatosUsuario = lazy(() => import('./Paginas/DatosUsuario'));
@@ -21,6 +21,7 @@ const CreacionUsuario = lazy(() => import('./Paginas/CreacionUsuario'));
 const Empresas = lazy(() => import('./Paginas/Empresas'));
 const Dashboard = lazy(() => import('./Paginas/DashBoard'));
 const GestionUsuarios = lazy(() => import('./Paginas/GestionUsuarios'));
+const Proyeccion = lazy(() => import('./Paginas/Proyeccion'));
 const MatrizMateriales = lazy(() => import('./Paginas/MatrizMateriales'));
 const RegistroVentas = lazy(() => import('./Paginas/RegistroVentas'));
 
@@ -81,7 +82,6 @@ function App() {
           {/* T8.6: reporte desde la BD. El flujo anterior por archivos queda oculto (solo dev) hasta validar el nuevo. */}
           <Route path="/crear-reporte" element={<PrivateRoute><ReportePeriodo /></PrivateRoute>} />
           <Route path="/crear-reporte-archivos" element={<PrivateRoute allowedProfiles={['dev']}><CrearReporte /></PrivateRoute>} />
-          <Route path="/gestion-archivos" element={<PrivateRoute><GestDoc /></PrivateRoute>} />
           <Route path="/tutoriales" element={<PrivateRoute><Tutoriales /></PrivateRoute>} />
           <Route path="/soporte" element={<PrivateRoute><Soporte /></PrivateRoute>} />
           <Route path="/datos-usuario" element={<PrivateRoute><DatosUsuario /></PrivateRoute>} />
@@ -90,6 +90,7 @@ function App() {
           <Route path="/empresas" element={<PrivateRoute allowedProfiles={['admin', 'dev']}><Empresas /></PrivateRoute>} />
           <Route path="/crear-empresa" element={<Navigate to="/empresas" replace />} />
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+          <Route path="/proyeccion" element={<PrivateRoute><Proyeccion /></PrivateRoute>} />
           <Route path="/gestion-usuarios" element={<PrivateRoute allowedProfiles={['dev']}><GestionUsuarios /></PrivateRoute>} />
 
           {/* Redirección por defecto */}

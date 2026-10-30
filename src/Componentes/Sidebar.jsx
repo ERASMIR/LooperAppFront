@@ -1,13 +1,13 @@
 import React from 'react';
 import { NavLink } from "react-router-dom";
 import {
-  FileText,
   LayoutDashboard,
   BookOpen,
   PanelLeft,
   LifeBuoy,
   Boxes,
   ShoppingCart,
+  TrendingUp,
 } from "lucide-react";
 import { FaChartColumn } from "react-icons/fa6";
 
@@ -17,8 +17,8 @@ const ITEMS = [
   { to: "/matriz-materiales", label: "Matriz de Materiales", icono: Boxes },
   { to: "/registro-ventas", label: "Registro de Ventas", icono: ShoppingCart },
   { to: "/crear-reporte", label: "Crear Reporte", icono: LayoutDashboard },
-  { to: "/gestion-archivos", label: "Gestión Archivos", icono: FileText },
   { to: "/dashboard", label: "Dashboard", icono: FaChartColumn },
+  { to: "/proyeccion", label: "Proyección", icono: TrendingUp },
   { to: "/tutoriales", label: "Tutoriales", icono: BookOpen },
   { to: "/soporte", label: "Soporte", icono: LifeBuoy },
 ];

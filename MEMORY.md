@@ -119,3 +119,5 @@ Lo transversal (BD, entorno, decisiones que cruzan servicios) va en `../MEMORY.m
 - 2026-10-30: "Validación ecológica" (`/validacion-ecologica`, maqueta sin funciones, datos de ejemplo con una empresa
   real) sacada del front: sin ruta en `App.jsx` (redirige a /inicio). `ValidEcologica.jsx` se conserva como referencia.
   Pendiente al pasar a producción: sacar también Gestión Archivos del front (decisión de la persona).
+- 2026-10-30 (rama `feature/proyeccion`): módulo **Proyección** (`Paginas/Proyeccion.jsx`, `Componentes/proyeccion/`), conectado a
+  looper-reportes (`/api/proyeccion`, `/api/proyecciones`); Excel en el navegador. Gestión Archivos fuera del menú y sin ruta.
