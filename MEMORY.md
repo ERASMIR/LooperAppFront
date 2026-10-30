@@ -111,3 +111,11 @@ Lo transversal (BD, entorno, decisiones que cruzan servicios) va en `../MEMORY.m
   cambiaba el perfil), empresa "Sin cambio" ya no la borra, casillas "Otras empresas con acceso" (T11, `PUT usuarioEmpresas`).
   `CreacionUsuario.jsx`: token, sin `console.log` que mostraba la contraseña, aviso si el correo existe (409). Publicar junto
   con looper-usuarios de la misma fecha (exige el token).
+- 2026-10-30 (sin commit): auditoría UI cerrada salvo Gestión Archivos (sale del front en producción). Piezas comunes nuevas:
+  `Componentes/EncabezadoPagina.jsx` (título en caja blanca con barra verde; `extra` a la derecha), clases `btn-icono`,
+  `tarjeta`, `chip-etiqueta` (index.css), caché `config/cacheCatalogos.js` (invalidar al cambiar catálogos en la Matriz).
+  Archivos divididos: `Componentes/matriz/`, `Componentes/reporte/`, `cargaMasiva*Comun.js`, `CargaMasiva*Revision.jsx`.
+  Detalle en `../specs/004-auditoria-front/hallazgos.md`.
+- 2026-10-30: "Validación ecológica" (`/validacion-ecologica`, maqueta sin funciones, datos de ejemplo con una empresa
+  real) sacada del front: sin ruta en `App.jsx` (redirige a /inicio). `ValidEcologica.jsx` se conserva como referencia.
+  Pendiente al pasar a producción: sacar también Gestión Archivos del front (decisión de la persona).

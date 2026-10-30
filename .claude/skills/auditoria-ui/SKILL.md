@@ -35,7 +35,9 @@ El orden importa: lo visual va al final para no maquillar problemas de uso o de 
 
 5. **Piezas comunes ya definidas (usarlas, no inventar otras):** botones `btn-principal` / `btn-secundario` /
    `btn-peligro` / `btn-peligro-borde` (+ `btn-chico`), `pestana` / `pestana-activa`, `chip` / `chip-activo` y `campo`
-   en `src/index.css`; ventanas con `Componentes/Dialogo.jsx`; listados largos con `Componentes/Paginacion.jsx`;
+   en `src/index.css`; botones de solo ícono para abrir/cerrar menú y paneles con `btn-icono` (menú: `PanelLeft`; cajas del
+   Dashboard: `Minimize2`/`Maximize2`; otros paneles: `SquareChevronLeft`/`Right`, todos de lucide); encabezado de cada
+   página con `Componentes/EncabezadoPagina.jsx`; ventanas con `Componentes/Dialogo.jsx`; listados largos con `Componentes/Paginacion.jsx`;
    llamadas a la API con `src/config/apiCliente.js`.
 6. **Cuadros de resumen (decisión 2026-10-29):** siempre con `Componentes/Indicador.jsx`, **un color por significado,
    igual en todos los módulos**: neutro (totales y contexto), correcto (procesado / válido / nuevo), cambio

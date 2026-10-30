@@ -6,6 +6,7 @@ import { llamarApi as llamarApiBase, textoError } from "../config/apiCliente.js"
 import { normalizarRut } from "../Componentes/ventasRevision.js";
 import { Loader2, Pencil, Plus, X, CheckCircle2, AlertTriangle } from "lucide-react";
 
+import EncabezadoPagina from "../Componentes/EncabezadoPagina";
 // Empresas: datos de la empresa que pide la declaración (plantilla oficial de ReSimple: razón social, responsable, RUT y
 // representante legal) más el ID RETC del MMA. Dev crea y edita todas; el admin edita solo la suya (sin el GRANSIC, que
 // define el cálculo). API: /empresas de looper-usuarios (GET/POST/PUT, con sesión). Plan: specs/003-reporte/plantilla-resimple.md
@@ -90,7 +91,7 @@ const FormularioEmpresa = ({ inicial, gransicList, puedeGransic, onGuardar, onCe
             <p className="text-xs text-neutral-500 mb-3">Se usan para completar la planilla oficial del sistema de gestión.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Campo id="empresa-nombre" label="Razón social" obligatorio error={errores.nombre}>{input("nombre", { maxLength: 255 })}</Campo>
-              <Campo id="empresa-rut" label="RUT" obligatorio error={errores.rut} ayuda="Ej.: 76.123.456-0">{input("rut", { maxLength: 12 })}</Campo>
+              <Campo id="empresa-rut" label="RUT" obligatorio error={errores.rut} ayuda="Ej.: 76.123.456-0">{input("rut", { maxLength: 12, spellCheck: false, autoComplete: "off" })}</Campo>
               <Campo id="empresa-representante_legal" label="Representante legal" obligatorio error={errores.representante_legal}>
                 {input("representante_legal", { maxLength: 150 })}
               </Campo>
@@ -111,15 +112,15 @@ const FormularioEmpresa = ({ inicial, gransicList, puedeGransic, onGuardar, onCe
             <h3 className="font-semibold text-neutral-800 mb-3">Contacto</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Campo id="empresa-correo_responsable" label="Correo del responsable" error={errores.correo_responsable}>
-                {input("correo_responsable", { type: "email", maxLength: 255 })}
+                {input("correo_responsable", { type: "email", maxLength: 255, autoComplete: "email", spellCheck: false })}
               </Campo>
-              <Campo id="empresa-telefono" label="Teléfono" error={errores.telefono}>{input("telefono", { maxLength: 50 })}</Campo>
+              <Campo id="empresa-telefono" label="Teléfono" error={errores.telefono}>{input("telefono", { type: "tel", inputMode: "tel", maxLength: 50, autoComplete: "tel" })}</Campo>
               <div className="sm:col-span-2">
                 <Campo id="empresa-direccion" label="Dirección" error={errores.direccion}>{input("direccion", { maxLength: 255 })}</Campo>
               </div>
             </div>
           </section>
-          {errorGeneral && <p className="text-sm text-red-600">{errorGeneral}</p>}
+          {errorGeneral && <p role="alert" className="text-sm text-red-600">{errorGeneral}</p>}
         </div>
         <div className="flex justify-end gap-3 px-6 py-4 border-t">
           <button type="button" onClick={onCerrar} disabled={guardando} className="btn-secundario">Cancelar</button>
@@ -168,13 +169,13 @@ const Empresas = () => {
   const nombreGransic = (id) => gransicList.find((g) => String(g.id) === String(id))?.nombre || "—";
 
   return (
-    <div className="p-10 w-full">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold text-neutral-800">{esDev ? "Empresas" : "Datos de la empresa"}</h1>
-        <p className="text-neutral-600">Datos de la empresa para las declaraciones ante el sistema de gestión y el MMA.</p>
-      </header>
+    <div className="p-4 w-full">
+      <EncabezadoPagina
+        titulo={esDev ? "Empresas" : "Datos de la empresa"}
+        descripcion="Datos de la empresa para las declaraciones ante el sistema de gestión y el MMA."
+      />
 
-      <div className="bg-white p-6 rounded-lg shadow-sm">
+      <div className="tarjeta p-6">
         <div className="flex flex-wrap items-center gap-3 mb-4">
           {esDev && (
             <button onClick={() => setEditando({})} className="btn-principal">
@@ -184,12 +185,12 @@ const Empresas = () => {
         </div>
 
         {aviso && (
-          <div className="mb-4 flex items-center gap-2 text-sm rounded-xl px-4 py-2 border text-green-800 bg-green-50 border-green-200">
+          <div role="status" className="mb-4 flex items-center gap-2 text-sm rounded-xl px-4 py-2 border text-green-800 bg-green-50 border-green-200">
             <CheckCircle2 className="w-4 h-4" /><span className="flex-1">{aviso}</span>
             <button onClick={() => setAviso("")} className="p-0.5 rounded-full hover:bg-black/5"><X className="w-4 h-4" /></button>
           </div>
         )}
-        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+        {error && <p role="alert" className="mb-4 text-sm text-red-600">{error}</p>}
 
         {!empresas ? (
           <p className="flex items-center gap-2 text-neutral-600"><Loader2 className="w-4 h-4 animate-spin" /> Cargando…</p>

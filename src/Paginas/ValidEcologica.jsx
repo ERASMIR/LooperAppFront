@@ -1,16 +1,16 @@
-// src/pages/Home.jsx
+// Maqueta "Panel de Validación y Valorización" (sin funciones ni datos reales). Fuera del front desde 2026-10-30:
+// sin ruta en App.jsx; se conserva como referencia de diseño para un módulo futuro.
 import React, { useState } from "react";
-import { FaChevronLeft, FaChevronRight, FaFilter } from "react-icons/fa";
+import { FaFilter } from "react-icons/fa";
+import { SquareChevronLeft, SquareChevronRight } from "lucide-react";
+import EncabezadoPagina from "../Componentes/EncabezadoPagina";
 
 export default function Home() {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen bg-white p-6">
-      {/* Header */}
-      <h1 className="text-2xl font-bold mb-6 text-gray-800">
-        Panel de Validación y Valorización
-      </h1>
+    <div className="p-4">
+      <EncabezadoPagina titulo="Panel de Validación y Valorización" />
 
       {/* Botones de carga */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -40,13 +40,13 @@ export default function Home() {
           <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg shadow transition">
             Guardar Declaración
           </button>
-          <select className="border border-gray-300 rounded px-2 py-1">
+          <select className="border border-neutral-300 rounded px-2 py-1">
             <option>Mes</option>
             <option>Enero</option>
             <option>Febrero</option>
             <option>Marzo</option>
           </select>
-          <select className="border border-gray-300 rounded px-2 py-1">
+          <select className="border border-neutral-300 rounded px-2 py-1">
             <option>Año</option>
             <option>2024</option>
             <option>2025</option>
@@ -57,20 +57,22 @@ export default function Home() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Panel de sumadores (más estrecho) */}
         <div
-          className={`relative transition-all duration-300 ${
+          className={`relative transition-[width] duration-300 motion-reduce:transition-none ${
             collapsed ? "w-1" : "w-full md:col-span-1 lg:max-w-xs"
           }`}
         >
           <div
-            className={`h-full rounded p-4 transition-all duration-300 ${
+            className={`h-full rounded p-4 ${
               collapsed ? "hidden" : "block bg-orange-500/80 text-white shadow"
             }`}
           >
             <button
               onClick={() => setCollapsed(!collapsed)}
-              className="absolute top-2 right-2 bg-white text-gray-700 p-1 rounded-full shadow"
+              className="btn-icono absolute top-2 right-2"
+              title={collapsed ? "Expandir panel" : "Contraer panel"}
+              aria-label={collapsed ? "Expandir panel" : "Contraer panel"}
             >
-              {collapsed ? <FaChevronRight /> : <FaChevronLeft />}
+              {collapsed ? <SquareChevronRight size={16} aria-hidden="true" /> : <SquareChevronLeft size={16} aria-hidden="true" />}
             </button>
 
             <h2 className="text-lg font-semibold mb-4">Sumadores</h2>
@@ -122,7 +124,7 @@ export default function Home() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b hover:bg-gray-50">
+                <tr className="border-b hover:bg-neutral-50">
                   <td className="px-2 py-1">COCA COLA EMBONOR S.A</td>
                   <td className="px-2 py-1">Talca</td>
                   <td className="px-2 py-1">Papel y Cartón</td>
@@ -136,13 +138,13 @@ export default function Home() {
                     Validado
                   </td>
                   <td className="px-2 py-1">
-                    <select className="border border-gray-300 rounded px-2 py-1">
+                    <select className="border border-neutral-300 rounded px-2 py-1">
                       <option>Valorizado</option>
                       <option>-</option>
                     </select>
                   </td>
                 </tr>
-                <tr className="border-b hover:bg-gray-50">
+                <tr className="border-b hover:bg-neutral-50">
                   <td className="px-2 py-1">COCA COLA EMBONOR S.A</td>
                   <td className="px-2 py-1">Talca</td>
                   <td className="px-2 py-1">Papel y Cartón</td>
@@ -156,13 +158,13 @@ export default function Home() {
                     Observado
                   </td>
                   <td className="px-2 py-1">
-                    <select className="border border-gray-300 rounded px-2 py-1">
+                    <select className="border border-neutral-300 rounded px-2 py-1">
                       <option>Valorizado</option>
                       <option>-</option>
                     </select>
                   </td>
                 </tr>
-                <tr className="hover:bg-gray-50">
+                <tr className="hover:bg-neutral-50">
                   <td className="px-2 py-1">COCA COLA EMBONOR S.A</td>
                   <td className="px-2 py-1">Talca</td>
                   <td className="px-2 py-1">Papel y Cartón</td>
@@ -176,7 +178,7 @@ export default function Home() {
                     Registro no encontrado
                   </td>
                   <td className="px-2 py-1">
-                    <select className="border border-gray-300 rounded px-2 py-1">
+                    <select className="border border-neutral-300 rounded px-2 py-1">
                       <option>Valorizado</option>
                       <option>-</option>
                     </select>

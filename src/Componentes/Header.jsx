@@ -24,6 +24,10 @@ const Header = () => {
     };
   }, []);
 
+  // Empresa activa leída al cargar la lista (sin volver a pedir las empresas cada vez que cambia).
+  const empresaActivaRef = useRef(user?.empresaId);
+  useEffect(() => { empresaActivaRef.current = user?.empresaId; }, [user?.empresaId]);
+
   // Cargar empresas del usuario al montar
   useEffect(() => {
     if (!user?.id) return;
@@ -39,7 +43,7 @@ const Header = () => {
 
         // Establecer la primera empresa de la lista como default
         if (data.length > 0) {
-          const empresaActual = data.find((e) => e.id === user.empresaId);
+          const empresaActual = data.find((e) => e.id === empresaActivaRef.current);
           if (!empresaActual) {
             // Si la empresa del login no está en la lista, usar la primera
             setEmpresaActiva(data[0].id, data[0].nombre);
@@ -51,7 +55,7 @@ const Header = () => {
     };
 
     fetchEmpresas();
-  }, [user?.id]);
+  }, [user?.id, setEmpresaActiva]);
 
   const handleEmpresaChange = (e) => {
     const selectedId = e.target.value;

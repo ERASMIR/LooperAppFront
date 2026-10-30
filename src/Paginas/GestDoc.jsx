@@ -5,6 +5,7 @@ import { API_GESTDOC, API_GESTREPORT } from "../config/api";
 import { Pencil, Eye } from "lucide-react";
 
 
+import EncabezadoPagina from "../Componentes/EncabezadoPagina";
 // Encabezado de columna con handle de redimensionado
 const Th = ({ colKey, width, onResize, children }) => {
   const thRef = React.useRef(null);
@@ -377,10 +378,7 @@ const GestDoc = ({ sidebarCollapsed }) => {
         className={`flex flex-col bg-white transition-all duration-300 overflow-hidden
           ${tablaColapsada ? "w-0" : "flex-1 min-w-0 px-10 py-6"}`}
       >
-        <header className="mb-6 flex-shrink-0">
-          <h1 className="text-2xl font-bold text-neutral-800">Gestión Documental</h1>
-          <p className="text-neutral-600">Explora, visualiza y gestiona tus archivos.</p>
-        </header>
+        <EncabezadoPagina titulo="Gestión Documental" descripcion="Explora, visualiza y gestiona tus archivos." className="flex-shrink-0" />
 
         <div className="flex gap-4 mb-6 flex-shrink-0">
           {["matriz", "ventas", "reportes"].map((tipo) => (

@@ -4,8 +4,7 @@ import {
   FileText,
   LayoutDashboard,
   BookOpen,
-  ChevronsLeft,
-  ChevronsRight,
+  PanelLeft,
   LifeBuoy,
   Boxes,
   ShoppingCart,
@@ -31,17 +30,20 @@ const claseItem = ({ isActive }) =>
 
 const Sidebar = ({ collapsed, toggleCollapse }) => (
   <aside
-    className={`fixed top-20 left-0 z-40 bg-white border-r border-neutral-200 transition-[width] duration-300
+    className={`fixed top-20 left-0 z-40 bg-white border-r border-neutral-200 transition-[width] duration-300 motion-reduce:transition-none
       ${collapsed ? "w-22" : "w-64"}
       h-[calc(100vh-3.5rem)]`}
   >
     <div className="flex justify-end p-2">
+      {/* Mismo ícono abierto y cerrado (cuadro dividido); el texto de ayuda dice la acción. */}
       <button
         onClick={toggleCollapse}
-        aria-label={collapsed ? "Expandir menú" : "Contraer menú"}
-        className="p-1 rounded-md text-neutral-600 hover:text-primary-dark hover:bg-neutral-100"
+        aria-label={collapsed ? "Abrir menú" : "Cerrar menú"}
+        aria-expanded={!collapsed}
+        title={collapsed ? "Abrir menú" : "Cerrar menú"}
+        className="btn-icono"
       >
-        {collapsed ? <ChevronsRight size={20} aria-hidden="true" /> : <ChevronsLeft size={20} aria-hidden="true" />}
+        <PanelLeft size={18} aria-hidden="true" />
       </button>
     </div>
 

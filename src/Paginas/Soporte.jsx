@@ -2,6 +2,7 @@ import React, { useState, useContext, useRef } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { API_USUARIOS } from '../config/api';
 
+import EncabezadoPagina from "../Componentes/EncabezadoPagina";
 const Soporte = () => {
   const { user } = useContext(AuthContext);
   const [asunto, setAsunto] = useState('');
@@ -112,20 +113,18 @@ const Soporte = () => {
   };
 
   return (
-    <div className="p-10 w-full">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold text-neutral-800">Centro de Soporte</h1>
-        <p className="text-neutral-600 mt-2">
-          ¿Tienes algún problema? Crea un ticket y te ayudaremos lo antes posible.
-        </p>
-      </header>
+    <div className="p-4 w-full">
+      <EncabezadoPagina
+        titulo="Centro de Soporte"
+        descripcion="¿Tienes algún problema? Crea un ticket y te ayudaremos lo antes posible."
+      />
 
       <form
         onSubmit={handleSubmit}
-        className="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-lg"
+        className="max-w-4xl mx-auto tarjeta p-8"
       >
         <div className="mb-6">
-          <label htmlFor="asunto" className="block text-lg font-medium text-gray-800 mb-2">
+          <label htmlFor="asunto" className="block text-sm font-semibold text-neutral-800 mb-1">
             Asunto
           </label>
           <input
@@ -133,14 +132,14 @@ const Soporte = () => {
             id="asunto"
             value={asunto}
             onChange={(e) => setAsunto(e.target.value)}
-            className="w-full bg-gray-100 text-xl p-4 rounded-2xl mt-1"
+            className="w-full campo mt-1"
             placeholder="Ej: Problema al generar reporte"
             required
           />
         </div>
 
         <div className="mb-6">
-          <label htmlFor="descripcion" className="block text-lg font-medium text-gray-800 mb-2">
+          <label htmlFor="descripcion" className="block text-sm font-semibold text-neutral-800 mb-1">
             Descripción del Problema
           </label>
           <textarea
@@ -148,14 +147,14 @@ const Soporte = () => {
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
             rows="8"
-            className="w-full bg-gray-100 text-xl p-4 rounded-2xl mt-1"
+            className="w-full campo mt-1"
             placeholder="Describe detalladamente el inconveniente..."
             required
           />
         </div>
 
         <div className="mb-8">
-          <h3 className="text-lg font-medium text-gray-800 mb-4">Archivos Adjuntos</h3>
+          <h3 className="text-lg font-medium text-neutral-800 mb-4">Archivos Adjuntos</h3>
 
           <input
             type="file"
@@ -170,23 +169,23 @@ const Soporte = () => {
               adjuntos.map((file, index) => (
                 <div
                   key={index}
-                  className="flex justify-between items-center bg-gray-50 p-3 rounded-lg"
+                  className="flex justify-between items-center bg-neutral-50 p-3 rounded-lg"
                 >
-                  <span className="text-gray-700">{file.name}</span>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-neutral-700">{file.name}</span>
+                  <span className="text-sm text-neutral-500">
                     {(file.size / 1024 / 1024).toFixed(2)} MB
                   </span>
                 </div>
               ))
             ) : (
-              <p className="text-center text-gray-500 py-4">No hay archivos adjuntos.</p>
+              <p className="text-center text-neutral-500 py-4">No hay archivos adjuntos.</p>
             )}
           </div>
 
           <button
             type="button"
             onClick={handleAdjuntarClick}
-            className="mt-4 text-blue-600 hover:text-blue-800 transition-colors"
+            className="mt-4 text-primary-dark hover:underline"
           >
             + Añadir adjunto
           </button>
@@ -195,13 +194,9 @@ const Soporte = () => {
         <button
           type="submit"
           disabled={enviando}
-          className={`w-full text-xl py-4 rounded-xl transition-colors ${
-            enviando
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-blue-500 text-white hover:bg-blue-600'
-          }`}
+          className="btn-principal w-full"
         >
-          {enviando ? 'Enviando...' : 'Enviar Ticket'}
+          {enviando ? 'Enviando…' : 'Enviar ticket'}
         </button>
       </form>
     </div>

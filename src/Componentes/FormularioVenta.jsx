@@ -169,7 +169,7 @@ const FormularioVenta = ({
       onCerrar={onCerrar}
       pie={(
         <>
-          {errorGuardar && <p className="basis-full text-sm text-red-600">No se pudo guardar: {errorGuardar}</p>}
+          {errorGuardar && <p role="alert" className="basis-full text-sm text-red-600">No se pudo guardar: {errorGuardar}</p>}
           {intento && Object.keys(revision.errores).length > 0 && (
             <p className="mr-auto text-sm text-red-600">{revision.errores.general || "Revisa los datos marcados."}</p>
           )}
@@ -205,6 +205,8 @@ const FormularioVenta = ({
             <Campo label="SKU" obligatorio error={errores.sku}>
               <input
                 list="formulario-venta-skus"
+                spellCheck={false}
+                autoComplete="off"
                 value={valores.sku}
                 onChange={(e) => cambiarSku(e.target.value)}
                 placeholder="Busca por SKU o descripción"
@@ -231,7 +233,7 @@ const FormularioVenta = ({
           <h3 className="font-semibold text-neutral-800 mb-2">Cliente</h3>
           <div className="grid grid-cols-1 sm:grid-cols-[12rem_1fr] gap-3">
             <Campo label="RUT" obligatorio error={errores.rut}>
-              <input list="formulario-venta-ruts" value={valores.rut} onChange={(e) => cambiar("rut", e.target.value)} placeholder="76.123.456-0" className={`${inputCls} w-full ${borde("rut")}`} />
+              <input list="formulario-venta-ruts" spellCheck={false} autoComplete="off" value={valores.rut} onChange={(e) => cambiar("rut", e.target.value)} placeholder="76.123.456-0" className={`${inputCls} w-full ${borde("rut")}`} />
               <datalist id="formulario-venta-ruts">
                 {clientes.map((c) => <option key={c.rut} value={c.rut}>{c.razonSocial}</option>)}
               </datalist>
@@ -248,11 +250,11 @@ const FormularioVenta = ({
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             {FOLIOS.map((d) => (
               <Campo key={d.key} label={d.label}>
-                <input inputMode="numeric" value={valores[d.key]} onChange={(e) => cambiar(d.key, e.target.value)} className={`${inputCls} w-full ${borde("documentos")}`} />
+                <input inputMode="numeric" spellCheck={false} autoComplete="off" value={valores[d.key]} onChange={(e) => cambiar(d.key, e.target.value)} className={`${inputCls} w-full ${borde("documentos")}`} />
               </Campo>
             ))}
             <Campo label={PEDIDO.label}>
-              <input maxLength={MAX_PEDIDO} value={valores.pedido} onChange={(e) => cambiar("pedido", e.target.value)} className={`${inputCls} w-full`} />
+              <input maxLength={MAX_PEDIDO} spellCheck={false} autoComplete="off" value={valores.pedido} onChange={(e) => cambiar("pedido", e.target.value)} className={`${inputCls} w-full`} />
             </Campo>
           </div>
           {errores.documentos && <p className="text-xs text-red-600 mt-1">{errores.documentos}</p>}

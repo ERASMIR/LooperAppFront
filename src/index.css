@@ -50,6 +50,23 @@
   }
 
   /* Filtros (categorías): píldoras con borde. */
+  /* Botón de solo ícono para abrir / cerrar menú y paneles (2026-10-30): mismo estilo en toda la app. */
+  .btn-icono {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-md border border-neutral-200 bg-white text-primary-dark
+      shadow-sm transition-colors hover:bg-primary-light focus-visible:outline-none focus-visible:ring-2
+      focus-visible:ring-primary-dark;
+  }
+
+  /* Tarjeta de contenido (VI-09): una sola sombra suave y el mismo redondeo en toda la app. */
+  .tarjeta {
+    @apply rounded-xl bg-white shadow-sm;
+  }
+
+  /* Dato discreto junto al título de la página (p. ej. "Sistema de gestión: ReSimple"). */
+  .chip-etiqueta {
+    @apply inline-block rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-sm text-neutral-600;
+  }
+
   .chip {
     @apply rounded-full border border-neutral-300 bg-white px-3 py-1 text-sm font-medium text-neutral-700 transition-colors
       hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark;

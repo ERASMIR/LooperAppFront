@@ -3,11 +3,13 @@ import Dialogo from "../Componentes/Dialogo.jsx";
 import { AuthContext } from "../context/AuthContext.jsx";
 import { API_MATERIALES, API_VENTAS } from "../config/api";
 import { llamarApi } from "../config/apiCliente.js";
+import { obtenerCatalogos } from "../config/cacheCatalogos.js";
 import { Indicador, Indicadores } from "../Componentes/Indicador.jsx";
 import CargaMasivaVentas from "../Componentes/CargaMasivaVentas.jsx";
 import { EncabezadoAjustable, ModalColumnas } from "../Componentes/columnasTabla.jsx";
 import { useVistaTabla } from "../Componentes/useVistaTabla.js";
 import FormularioVenta from "../Componentes/FormularioVenta.jsx";
+import EncabezadoPagina from "../Componentes/EncabezadoPagina";
 import {
   MESES, nombrePeriodo, fechaChilena, llave, FOLIOS, PEDIDO, DOCUMENTOS, textoDocumentos, documentosEnOtrosPeriodos, textoDudosa,
 } from "../Componentes/ventasRevision.js";
@@ -60,7 +62,7 @@ const RegistroVentas = () => {
     if (!token || !empresaId) return;
     let vigente = true;
     Promise.all([
-      llamarApi(token, API_MATERIALES, `catalogosMatriz?empresaId=${empresaId}`),
+      obtenerCatalogos(token, empresaId),
       llamarApi(token, API_MATERIALES, `productos?empresaId=${empresaId}`),
     ])
       .then(([cat, productos]) => vigente && setMatriz({ productos, unidades: cat.unidades }))
@@ -115,7 +117,19 @@ const RegistroVentas = () => {
       ? await llamarApi(token, API_VENTAS, "ventas", { metodo: "PUT", body: { ...body, id: editando.id } })
       : await llamarApi(token, API_VENTAS, "ventas", { metodo: "POST", body: { ...body, anio: periodo.anio, mes: periodo.mes } });
     setFormulario(null);
-    await cargarPeriodo();
+    if (camposAdicionales.some((c) => !c.campoId)) {
+      await cargarPeriodo(); // se creó un campo adicional nuevo: cambia la lista de campos
+    } else {
+      // Solo esta venta (RC-02): se reemplaza o agrega en orden de fecha, y sus documentos en otros periodos se suman a
+      // los del periodo (marcan el registro dudoso).
+      const llaveDoc = (o) => `${o.tipo}|${o.numero}|${o.anio}|${o.mes}`;
+      setDatos((d) => {
+        const ventas = [...d.ventas.filter((x) => x.id !== r.venta.id), r.venta]
+          .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)) || a.id - b.id);
+        const otros = new Map([...d.otrosPeriodos, ...(r.advertencias?.otrosPeriodos || [])].map((o) => [llaveDoc(o), o]));
+        return { ...d, ventas, otrosPeriodos: [...otros.values()] };
+      });
+    }
     const dudosa = r.advertencias?.otrosPeriodos?.length ? ` Registro dudoso: ${textoDudosa(r.advertencias.otrosPeriodos)}.` : "";
     mostrarAviso(dudosa ? "aviso" : "ok", `${editando ? "Venta actualizada" : "Venta agregada"}: ${r.venta.sku} · ${textoDocumentos(r.venta)}.${dudosa}`);
   };
@@ -130,7 +144,7 @@ const RegistroVentas = () => {
       return;
     }
     setEliminando(null);
-    await cargarPeriodo();
+    setDatos((d) => ({ ...d, ventas: d.ventas.filter((x) => x.id !== v.id) }));
     mostrarAviso("ok", `Venta eliminada: ${v.sku} · ${textoDocumentos(v)}.`);
   };
 
@@ -154,7 +168,7 @@ const RegistroVentas = () => {
   // Documentos de las ventas del periodo que también están en otros periodos: la fila se marca como dudosa.
   const otrosPeriodos = useMemo(() => datos?.otrosPeriodos || [], [datos]);
 
-  // Periodo bloqueado: ya se creó el reporte con estas ventas. Para cambiarlas, primero hay que inhabilitar el reporte.
+  // Periodo bloqueado: ya se creó el reporte con estas ventas. Para cambiarlas, primero hay que eliminar el reporte.
   const bloqueo = datos?.bloqueado || null;
   const puedeModificar = (v) => !bloqueo && (puedeTodo || v.creadoPorId === user?.id);
   const resumen = useMemo(() => ({
@@ -248,17 +262,17 @@ const RegistroVentas = () => {
 
         {bloqueo && (
           <div className="mb-4 flex gap-2 text-sm rounded-xl px-4 py-3 border text-neutral-700 bg-gray-50 border-gray-300">
-            <Lock className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <Lock className="w-4 h-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
             <span>
               <b>Periodo bloqueado.</b> Las ventas de {nombrePeriodo(periodo)} ya se usaron en un reporte
               ({[formatoFechaHora(bloqueo.fecha), bloqueo.por].filter(Boolean).join(", ")}). Para cargar, editar o eliminar
-              ventas, primero hay que inhabilitar ese reporte.
+              ventas, primero hay que eliminar ese reporte en Crear Reporte.
             </span>
           </div>
         )}
 
         {aviso && (
-          <div className={`mb-4 flex items-center gap-2 text-sm rounded-xl px-4 py-2 border ${aviso.tipo === "ok" ? "text-green-800 bg-green-50 border-green-200" : "text-yellow-800 bg-yellow-50 border-yellow-200"}`}>
+          <div role="status" className={`mb-4 flex items-center gap-2 text-sm rounded-xl px-4 py-2 border ${aviso.tipo === "ok" ? "text-green-800 bg-green-50 border-green-200" : "text-yellow-800 bg-yellow-50 border-yellow-200"}`}>
             {aviso.tipo === "ok" ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
             <span className="flex-1">{aviso.texto}</span>
             <button onClick={() => setAviso(null)} className="p-0.5 rounded-full hover:bg-black/5"><X className="w-4 h-4" /></button>
@@ -283,6 +297,9 @@ const RegistroVentas = () => {
           <div className="relative w-full sm:w-80">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
             <input
+              type="search"
+              spellCheck={false}
+              autoComplete="off"
               value={busqueda}
               onChange={(e) => { setBusqueda(e.target.value); setMostradas(LINEAS_POR_PAGINA); }}
               placeholder="Buscar por SKU, descripción, cliente o RUT"
@@ -297,13 +314,14 @@ const RegistroVentas = () => {
           </p>
         ) : (
           <>
-            <div className="overflow-auto max-h-[60dvh] border rounded-xl">
+            {/* UX-10: sin alto máximo propio (desplaza la página, como la Matriz); solo barra horizontal si hay muchas columnas. */}
+            <div className="overflow-x-auto border rounded-xl">
               <table className="text-sm table-fixed" style={{ width: anchoTabla, minWidth: "100%" }}>
                 <colgroup>
                   {visibles.map((c) => <col key={c.id} style={{ width: vistaTabla.anchoDe(c) }} />)}
                   <col style={{ width: ANCHO_ACCIONES }} />
                 </colgroup>
-                <thead className="bg-gray-50 text-left text-neutral-600 sticky top-0 z-10">
+                <thead className="bg-gray-50 text-left text-neutral-600">
                   <tr>
                     {visibles.map((c) => <EncabezadoAjustable key={c.id} columna={c} vistaTabla={vistaTabla} className={`p-2 ${c.derecha ? "text-right" : ""}`} />)}
                     <th className="p-2"></th>
@@ -425,7 +443,7 @@ const RegistroVentas = () => {
                 {textoDocumentos(eliminando)} a <b>{eliminando.razonSocial}</b> ({fechaChilena(eliminando.fecha)})?
               </p>
               <p className="text-xs text-neutral-500 mt-2">Deja de contar en {nombrePeriodo(periodo)}; queda registrada en la auditoría.</p>
-              {errorEliminar && <p className="text-sm text-red-600 mt-3">No se pudo eliminar: {errorEliminar}</p>}
+              {errorEliminar && <p role="alert" className="text-sm text-red-600 mt-3">No se pudo eliminar: {errorEliminar}</p>}
               <div className="flex justify-end gap-3 mt-6">
                 <button onClick={() => { setEliminando(null); setErrorEliminar(""); }} className="btn-secundario">Cancelar</button>
                 <button onClick={eliminarVenta} className="btn-peligro">Eliminar</button>
@@ -446,13 +464,10 @@ const RegistroVentas = () => {
   }
 
   return (
-    <div className="p-10 w-full">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold text-neutral-800">Registro de Ventas</h1>
-        <p className="text-neutral-600">Gestiona las ventas mensuales de tus productos.</p>
-      </header>
+    <div className="p-4 w-full">
+      <EncabezadoPagina titulo="Registro de Ventas" descripcion="Gestiona las ventas mensuales de tus productos." />
 
-      <div className="bg-white p-6 rounded-lg shadow-sm min-h-[calc(100vh-14rem)]">{contenido}</div>
+      <div className="tarjeta p-6 min-h-[calc(100vh-14rem)]">{contenido}</div>
     </div>
   );
 };

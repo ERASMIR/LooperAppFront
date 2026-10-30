@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useCallback, useContext, useState } from "react";
 
 export const AuthContext = createContext(null);
 
@@ -37,21 +37,20 @@ export const AuthProvider = ({ children }) => {
       perfil: userData.perfil || "",
     };
 
-    console.log("🟢 Guardando usuario en AuthContext:", fullUserData);
-    console.log("🔑 Guardando token:", token);
-
     setUser(fullUserData);
     setToken(token);
     localStorage.setItem("usuario", JSON.stringify(fullUserData));
     localStorage.setItem("token", token);
   };
 
-  // Función para cambiar la empresa activa
-  const setEmpresaActiva = (empresaId, empresaNombre) => {
-    const updatedUser = { ...user, empresaId, empresa: empresaNombre };
-    setUser(updatedUser);
-    localStorage.setItem("usuario", JSON.stringify(updatedUser));
-  };
+  // Función para cambiar la empresa activa (estable: se puede usar como dependencia de efectos)
+  const setEmpresaActiva = useCallback((empresaId, empresaNombre) => {
+    setUser((actual) => {
+      const updatedUser = { ...actual, empresaId, empresa: empresaNombre };
+      localStorage.setItem("usuario", JSON.stringify(updatedUser));
+      return updatedUser;
+    });
+  }, []);
 
   // Función para cerrar sesión
   const logout = () => {

@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useContext, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useContext, useMemo, useCallback, useRef } from 'react';
 import { Bar } from 'react-chartjs-2';
-import { FaAnglesLeft, FaAnglesRight, FaChartBar, FaTable } from "react-icons/fa6";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { FaChartBar, FaTable } from "react-icons/fa6";
+import { AlertTriangle, Loader2, Maximize2, Minimize2 } from "lucide-react";
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend,
 } from 'chart.js';
@@ -11,6 +11,7 @@ import { llamarApi } from "../config/apiCliente.js";
 import { Indicador, Indicadores } from "../Componentes/Indicador.jsx";
 import { MESES } from "../Componentes/ventasRevision.js";
 
+import EncabezadoPagina from "../Componentes/EncabezadoPagina";
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 // Dashboard: suma de los reportes VIGENTES (Crear Reporte, BD) de un rango de periodos, por material. Hay a lo más un
@@ -30,14 +31,15 @@ const rangoPorDefecto = () => {
 
 // ── Componentes ───────────────────────────────────────────────────────────────
 const Panel = ({ isOpen, toggle, children, collapsedIcon, style }) => (
-  <div style={style} className="relative flex flex-col transition-all duration-300 ease-in-out bg-white rounded-lg shadow-md">
+  <div style={style} className="relative flex flex-col transition-[flex,width] duration-300 ease-in-out motion-reduce:transition-none tarjeta">
     <button
       onClick={toggle}
-      className="absolute top-2 right-2 bg-white text-primary-dark rounded-md w-7 h-7 flex items-center justify-center shadow-md hover:bg-primary-light transition z-10"
-      title={isOpen ? "Colapsar" : "Expandir"}
-      aria-label={isOpen ? "Colapsar panel" : "Expandir panel"}
+      className="btn-icono absolute top-2 right-2 z-10"
+      title={isOpen ? "Contraer panel" : "Expandir panel"}
+      aria-label={isOpen ? "Contraer panel" : "Expandir panel"}
+      aria-expanded={isOpen}
     >
-      {isOpen ? <FaAnglesLeft /> : <FaAnglesRight />}
+      {isOpen ? <Minimize2 size={16} aria-hidden="true" /> : <Maximize2 size={16} aria-hidden="true" />}
     </button>
     {isOpen ? children : (
       <div className="flex items-center justify-center h-full text-neutral-500">{collapsedIcon}</div>
@@ -164,7 +166,13 @@ function Dashboard() {
     return lista;
   }, []);
 
+  // El rango se lee de una referencia: la consulta automática corre al entrar y al cambiar de empresa, y los cambios de
+  // periodo se aplican con "Consultar" (antes un eslint-disable en el efecto).
+  const rangoActual = useRef(rango);
+  useEffect(() => { rangoActual.current = rango; }, [rango]);
+
   const consultar = useCallback(async () => {
+    const rango = rangoActual.current;
     if (!token || !empresaId) return;
     if (clave(rango.desde) > clave(rango.hasta)) {
       setError("El periodo inicial debe ser anterior o igual al final.");
@@ -181,10 +189,9 @@ function Dashboard() {
     } finally {
       setCargando(false);
     }
-  }, [token, empresaId, rango]);
+  }, [token, empresaId]);
 
-  // Consulta al entrar y al cambiar de empresa; los cambios de periodo se aplican con "Consultar".
-  useEffect(() => { consultar(); }, [token, empresaId]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { consultar(); }, [consultar]);
 
   const tienePeligrosidad = resumen?.gransic?.tienePeligrosidad ?? true;
   const categorias = useMemo(() => [...new Set((resumen?.materiales || []).map((m) => m.categoria))], [resumen]);
@@ -203,12 +210,9 @@ function Dashboard() {
 
   return (
     <div className="flex flex-col h-full w-full min-w-full flex-grow p-4">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold text-neutral-800">Visualización de Materiales</h1>
-        <p className="text-neutral-600">Toneladas declaradas en los reportes vigentes del rango de periodos.</p>
-      </header>
+      <EncabezadoPagina titulo="Dashboard" descripcion="Toneladas declaradas en los reportes vigentes del rango de periodos." />
 
-      <div className="bg-white p-4 rounded-lg shadow-sm mb-4 flex items-center justify-between flex-wrap gap-4">
+      <div className="tarjeta p-4 mb-4 flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3 flex-wrap">
           <span className="font-medium text-neutral-700">Período:</span>
           {["desde", "hasta"].map((extremo, i) => (
@@ -234,7 +238,7 @@ function Dashboard() {
         </button>
       </div>
 
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="mb-4 text-sm text-red-600">{error}</p>}
 
       {resumen && (
         <Indicadores className="mb-4">
@@ -265,7 +269,7 @@ function Dashboard() {
       )}
 
       {resumen && resumen.periodos.length === 0 ? (
-        <p className="bg-white rounded-lg shadow-sm p-6 text-center text-neutral-600">
+        <p className="tarjeta p-6 text-center text-neutral-600">
           No hay reportes vigentes entre {nombreCorto(resumen.desde)} y {nombreCorto(resumen.hasta)}. Créalos en Crear Reporte.
         </p>
       ) : resumen && (
