@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { API_USUARIOS } from "../config/api";
+import { AuthContext } from "../context/AuthContext.jsx";
 
 const CreacionUsuario = () => {
+  const { token } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     id: uuidv4(),
     nombre: "",
@@ -15,7 +17,6 @@ const CreacionUsuario = () => {
   });
 
   const [empresas, setEmpresas] = useState([]); // 👈 listado de empresas desde la API
-  const [errorUsuarioExistente, setErrorUsuarioExistente] = useState(false);
 
   // 🔹 Cargar empresas desde backend al montar el componente
   useEffect(() => {
@@ -38,14 +39,13 @@ const CreacionUsuario = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("➡️ Enviando datos al backend:", formData);
-
     try {
+      // crearUsuario exige la sesión (JWT) de un dev.
       const res = await fetch(
         `${API_USUARIOS}/crearUsuario`,
         {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(formData),
       });
 
@@ -64,7 +64,7 @@ const CreacionUsuario = () => {
           data?.error?.includes("Duplicate entry") ||
           data?.error?.toLowerCase()?.includes("el correo ya se encuentra registrado")
         ) {
-          setErrorUsuarioExistente(true);
+          alert("El correo ya se encuentra registrado.");
           return;
         }
         throw new Error("Error al crear usuario.");

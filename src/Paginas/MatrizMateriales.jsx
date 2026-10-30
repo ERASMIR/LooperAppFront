@@ -418,7 +418,7 @@ const ListadoProductos = ({
     <div>
       <Indicadores className="mb-5">
         <Indicador etiqueta="Productos" valor={productos.length} />
-        <Indicador etiqueta="Unidades de venta" valor={productos.reduce((n, p) => n + p.unidades.length, 0)} />
+        <Indicador etiqueta="Unidades de venta por producto (total)" valor={productos.reduce((n, p) => n + p.unidades.length, 0)} />
         <Indicador etiqueta="Con respaldo adjunto" valor={productos.filter((p) => p.adjunto).length} />
         <Indicador etiqueta="Última actualización" valor={ultima ? formatoFecha(ultima) : "—"} />
       </Indicadores>

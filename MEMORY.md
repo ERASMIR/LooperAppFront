@@ -106,3 +106,8 @@ Lo transversal (BD, entorno, decisiones que cruzan servicios) va en `../MEMORY.m
   dev lista/crea/edita todas, admin edita la suya sin GRANSIC; usa `/api/empresas` de looper-usuarios (con JWT). Menú:
   "Empresas" (dev) / "Datos de la Empresa" (admin). ReportePeriodo: botón "Reporte ReSimple .xlsx" (descarga con fetch+blob,
   nombre desde Content-Disposition; errores junto al botón). Plan: `specs/003-reporte/plantilla-resimple.md`.
+- 2026-10-30: Matriz: cuadro "Unidades de venta" → "Unidades de venta por producto (total)" (suma SKU+unidad, no tipos).
+  `GestionUsuarios.jsx`: token en las llamadas, perfiles corregidos (1 admin, 2 REP, 3 dev; estaban 1/3 invertidos y editar
+  cambiaba el perfil), empresa "Sin cambio" ya no la borra, casillas "Otras empresas con acceso" (T11, `PUT usuarioEmpresas`).
+  `CreacionUsuario.jsx`: token, sin `console.log` que mostraba la contraseña, aviso si el correo existe (409). Publicar junto
+  con looper-usuarios de la misma fecha (exige el token).

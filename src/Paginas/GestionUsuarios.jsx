@@ -1,15 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import bcrypt from "bcryptjs";
 import { Pencil, KeyRound, X, Check, Loader2 } from "lucide-react";
 import { API_USUARIOS } from "../config/api";
+import { AuthContext } from "../context/AuthContext.jsx";
 
+// Ids de perfil_usuario: 1 admin, 2 usuarioREP, 3 dev (antes estaban 1 y 3 invertidos y editar cambiaba el perfil).
 const PERFILES = [
-  { id: "1", nombre: "dev" },
+  { id: "1", nombre: "admin" },
   { id: "2", nombre: "usuarioREP" },
-  { id: "3", nombre: "admin" },
+  { id: "3", nombre: "dev" },
 ];
+const esDev = (idPerfil) => String(idPerfil) === "3";
 
 const GestionUsuarios = () => {
+  const { token } = useContext(AuthContext);
+  // Los endpoints de gestión de usuarios exigen la sesión (JWT) de un dev.
+  const conSesion = { Authorization: `Bearer ${token}` };
   const [usuarios, setUsuarios] = useState([]);
   const [empresas, setEmpresas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +40,7 @@ const GestionUsuarios = () => {
     setError(null);
     try {
       const [resUsuarios, resEmpresas] = await Promise.all([
-        fetch(`${API_USUARIOS}/getAllUsuarios`),
+        fetch(`${API_USUARIOS}/getAllUsuarios`, { headers: conSesion }),
         fetch(`${API_USUARIOS}/getEmpresas`),
       ]);
       if (!resUsuarios.ok || !resEmpresas.ok) throw new Error("Error al cargar datos");
@@ -60,7 +66,9 @@ const GestionUsuarios = () => {
       apellidos: usuario.apellidos,
       mail: usuario.mail,
       id_perfil_usuario: PERFILES.find((p) => p.nombre === usuario.perfil)?.id || "2",
-      empresa_id: "",
+      empresa_id: usuario.empresa_id ? String(usuario.empresa_id) : "",
+      // Empresas con acceso además de la principal (tabla usuario_empresa); la principal siempre tiene acceso.
+      empresasAcceso: (usuario.empresas_ids || []).map(String),
     });
     setModalEditar(usuario);
   }
@@ -74,12 +82,22 @@ const GestionUsuarios = () => {
     e.preventDefault();
     setGuardandoEditar(true);
     try {
+      const { empresasAcceso, ...datos } = formEditar;
       const res = await fetch(`${API_USUARIOS}/updateUsuarioAdmin`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formEditar),
+        headers: { "Content-Type": "application/json", ...conSesion },
+        body: JSON.stringify(datos),
       });
       if (!res.ok) throw new Error("Error al actualizar");
+      // El dev ve todas las empresas: no se le asignan.
+      if (!esDev(datos.id_perfil_usuario)) {
+        const resEmpresas = await fetch(`${API_USUARIOS}/usuarioEmpresas`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", ...conSesion },
+          body: JSON.stringify({ usuarioId: datos.id, empresaIds: empresasAcceso.map(Number) }),
+        });
+        if (!resEmpresas.ok) throw new Error("Error al asignar empresas");
+      }
       cerrarModalEditar();
       await cargarDatos();
     } catch (err) {
@@ -112,7 +130,7 @@ const GestionUsuarios = () => {
       const passwordHash = await bcrypt.hash(nuevaPassword, 10);
       const res = await fetch(`${API_USUARIOS}/resetPasswordAdmin`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...conSesion },
         body: JSON.stringify({ id: modalPassword.id, passwordHash }),
       });
       if (!res.ok) throw new Error("Error al restablecer");
@@ -282,6 +300,36 @@ const GestionUsuarios = () => {
                   ))}
                 </select>
               </div>
+
+              <fieldset>
+                <legend className="block text-sm text-gray-600 mb-1">Otras empresas con acceso</legend>
+                {esDev(formEditar.id_perfil_usuario) ? (
+                  <p className="text-sm text-neutral-500">Un usuario dev tiene acceso a todas las empresas.</p>
+                ) : (
+                  <div className="max-h-40 overflow-y-auto bg-gray-100 rounded-xl px-4 py-3 space-y-1">
+                    {empresas.map((emp) => {
+                      const id = String(emp.id);
+                      const principal = id === formEditar.empresa_id;
+                      const marcada = principal || (formEditar.empresasAcceso || []).includes(id);
+                      return (
+                        <label key={emp.id} className="flex items-center gap-2 text-sm text-gray-700">
+                          <input
+                            type="checkbox"
+                            checked={marcada}
+                            disabled={principal}
+                            onChange={(e) => {
+                              const actuales = (formEditar.empresasAcceso || []).filter((x) => x !== id);
+                              setFormEditar({ ...formEditar, empresasAcceso: e.target.checked ? [...actuales, id] : actuales });
+                            }}
+                          />
+                          {emp.nombre}
+                          {principal && <span className="text-neutral-500">(principal)</span>}
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </fieldset>
 
               <div className="flex justify-end gap-3 pt-2">
                 <button
