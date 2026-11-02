@@ -4,7 +4,7 @@
 - **Tipo:** React + Vite SPA
 - **Azure:** Static Web App (deploy automatico via GitHub Actions)
 - **GitHub:** https://github.com/ERASMIR/LooperAppFront.git (branch: main)
-- **Puerto local:** 5173 (`npm run dev`)
+- **Puerto local:** 5173 — `npm run dev` (proxy a **producción**) o `npx vite --config vite.config.local.js` (proxy a Functions locales)
 - **Version tag:** v1.0-deploy-2026-02-16
 
 ## Arquitectura
@@ -52,11 +52,13 @@ API_PROCESAR  = isProd ? 'https://looperapp.azurewebsites.net/api'       : '/api
 ```
 
 ## Proxy Vite (solo dev)
-En `vite.config.js`:
-- `/api-usuarios` → `http://localhost:7073`
+En `vite.config.js` (`npm run dev`), todo apunta a producción:
+- `/api-usuarios` → `https://looper-usuarios.azurewebsites.net`
 - `/api-procesar` → `https://looperapp.azurewebsites.net`
 - `/api-gestdoc` → `https://looper-gestdoc.azurewebsites.net`
 - `/api-gestreport` → `https://looper-gestreport.azurewebsites.net`
+
+En `vite.config.local.js` (solo local, excluido de git): 7073 usuarios, 7072 gestdoc, 7071 gestreport, 7075 procesar.
 
 ## Autenticacion (AuthContext)
 - Login retorna JWT + objeto usuario

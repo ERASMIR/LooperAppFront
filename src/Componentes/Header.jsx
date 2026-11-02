@@ -24,6 +24,10 @@ const Header = () => {
     };
   }, []);
 
+  // Empresa activa leída al cargar la lista (sin volver a pedir las empresas cada vez que cambia).
+  const empresaActivaRef = useRef(user?.empresaId);
+  useEffect(() => { empresaActivaRef.current = user?.empresaId; }, [user?.empresaId]);
+
   // Cargar empresas del usuario al montar
   useEffect(() => {
     if (!user?.id) return;
@@ -39,7 +43,7 @@ const Header = () => {
 
         // Establecer la primera empresa de la lista como default
         if (data.length > 0) {
-          const empresaActual = data.find((e) => e.id === user.empresaId);
+          const empresaActual = data.find((e) => e.id === empresaActivaRef.current);
           if (!empresaActual) {
             // Si la empresa del login no está en la lista, usar la primera
             setEmpresaActiva(data[0].id, data[0].nombre);
@@ -51,7 +55,7 @@ const Header = () => {
     };
 
     fetchEmpresas();
-  }, [user?.id]);
+  }, [user?.id, setEmpresaActiva]);
 
   const handleEmpresaChange = (e) => {
     const selectedId = e.target.value;
@@ -86,7 +90,7 @@ const Header = () => {
         <select
           value={user.empresaId || ""}
           onChange={handleEmpresaChange}
-          className="appearance-none bg-transparent border-none text-lg text-gray-700 hover:text-primary transition cursor-pointer focus:outline-none pr-1"
+          className="appearance-none bg-transparent border-none text-lg text-gray-700 hover:text-primary-dark transition cursor-pointer focus:outline-none pr-1"
         >
           {empresas.length === 0 && (
             <option value={user.empresaId || ""}>{user.empresa || "Sin empresa"}</option>
@@ -103,7 +107,7 @@ const Header = () => {
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 text-lg text-gray-700 hover:text-primary transition"
+          className="flex items-center gap-2 text-lg text-gray-700 hover:text-primary-dark transition"
         >
           {user.name}
           <ChevronDown size={18} />
@@ -127,12 +131,12 @@ const Header = () => {
               </Link>
             )}
 
-            {(user.perfil === "dev") && (
+            {(user.perfil === "dev" || user.perfil === "admin") && (
               <Link
-                to="/crear-empresa"
+                to="/empresas"
                 className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
               >
-                Crear Nueva Empresa
+                {user.perfil === "dev" ? "Empresas" : "Datos de la Empresa"}
               </Link>
             )}
 

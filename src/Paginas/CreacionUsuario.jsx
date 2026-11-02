@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { API_USUARIOS } from "../config/api";
+import { AuthContext } from "../context/AuthContext.jsx";
+import EncabezadoPagina from "../Componentes/EncabezadoPagina";
 
 const CreacionUsuario = () => {
+  const { token } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     id: uuidv4(),
     nombre: "",
@@ -15,7 +18,6 @@ const CreacionUsuario = () => {
   });
 
   const [empresas, setEmpresas] = useState([]); // 👈 listado de empresas desde la API
-  const [errorUsuarioExistente, setErrorUsuarioExistente] = useState(false);
 
   // 🔹 Cargar empresas desde backend al montar el componente
   useEffect(() => {
@@ -38,14 +40,13 @@ const CreacionUsuario = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("➡️ Enviando datos al backend:", formData);
-
     try {
+      // crearUsuario exige la sesión (JWT) de un dev.
       const res = await fetch(
         `${API_USUARIOS}/crearUsuario`,
         {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(formData),
       });
 
@@ -64,7 +65,7 @@ const CreacionUsuario = () => {
           data?.error?.includes("Duplicate entry") ||
           data?.error?.toLowerCase()?.includes("el correo ya se encuentra registrado")
         ) {
-          setErrorUsuarioExistente(true);
+          alert("El correo ya se encuentra registrado.");
           return;
         }
         throw new Error("Error al crear usuario.");
@@ -78,20 +79,18 @@ const CreacionUsuario = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-5rem)]">
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-5rem)]">
+      <EncabezadoPagina titulo="Creación de Usuario (Admin)" className="w-full max-w-2xl" />
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-2xl space-y-8 p-12 bg-white rounded-2xl shadow-lg"
+        className="w-full max-w-2xl space-y-8 p-12 tarjeta"
       >
-        <h2 className="text-3xl font-bold mb-8 text-gray-800">
-          Creación de Usuario (Admin)
-        </h2>
 
         <input
           type="text"
           name="nombre"
           placeholder="Nombre"
-          className="w-full bg-gray-100 text-xl p-5 rounded-2xl focus:outline-none placeholder-gray-400"
+          className="w-full campo"
           onChange={handleChange}
           value={formData.nombre}
           required
@@ -101,7 +100,7 @@ const CreacionUsuario = () => {
           type="text"
           name="apellidos"
           placeholder="Apellidos"
-          className="w-full bg-gray-100 text-xl p-5 rounded-2xl focus:outline-none placeholder-gray-400"
+          className="w-full campo"
           onChange={handleChange}
           value={formData.apellidos}
           required
@@ -110,7 +109,7 @@ const CreacionUsuario = () => {
         {/* 🔹 Select para empresas */}
         <select
           name="empresa_id"
-          className="w-full bg-gray-100 text-xl p-5 rounded-2xl focus:outline-none placeholder-gray-400"
+          className="w-full campo"
           onChange={handleChange}
           value={formData.empresa_id}
           required
@@ -127,7 +126,7 @@ const CreacionUsuario = () => {
           type="email"
           name="mail"
           placeholder="Correo electrónico"
-          className="w-full bg-gray-100 text-xl p-5 rounded-2xl focus:outline-none placeholder-gray-400"
+          className="w-full campo"
           onChange={handleChange}
           value={formData.mail}
           required
@@ -137,7 +136,7 @@ const CreacionUsuario = () => {
           type="password"
           name="password"
           placeholder="Contraseña"
-          className="w-full bg-gray-100 text-xl p-5 rounded-2xl focus:outline-none placeholder-gray-400"
+          className="w-full campo"
           onChange={handleChange}
           value={formData.password}
           required
@@ -147,14 +146,14 @@ const CreacionUsuario = () => {
           type="url"
           name="url_avatar"
           placeholder="URL del avatar (opcional)"
-          className="w-full bg-gray-100 text-xl p-5 rounded-2xl focus:outline-none placeholder-gray-400"
+          className="w-full campo"
           onChange={handleChange}
           value={formData.url_avatar}
         />
 
         <select
           name="id_perfil_usuario"
-          className="w-full bg-gray-100 text-xl p-5 rounded-2xl focus:outline-none placeholder-gray-400"
+          className="w-full campo"
           onChange={handleChange}
           value={formData.id_perfil_usuario}
           required
@@ -165,7 +164,7 @@ const CreacionUsuario = () => {
 
         <button
           type="submit"
-          className="w-full text-xl bg-primary-500 text-gray300 py-5 rounded-2xl hover:bg-primary-600 transition-colors"
+          className="btn-principal w-full"
         >
           Crear Usuario
         </button>

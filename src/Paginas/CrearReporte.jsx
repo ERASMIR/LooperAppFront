@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useContext } from "react";
-import { FolderUp, SquareArrowUp, ListChecks, FileCog, AlertTriangle } from "lucide-react";
+import { FolderUp, SquareArrowUp, ListChecks, FileCog, AlertTriangle, SquareChevronLeft, SquareChevronRight } from "lucide-react";
 import { FaFileDownload } from "react-icons/fa";
 import { TbBrowserMaximize } from "react-icons/tb";
 import { AuthContext } from "../context/AuthContext";
 import { API_USUARIOS, API_GESTDOC, API_GESTREPORT, API_PROCESAR } from "../config/api";
 import * as XLSX from "xlsx";
 
+import EncabezadoPagina from "../Componentes/EncabezadoPagina";
 // ─── Definición de campos requeridos para cada tipo de archivo ───────────────
 const MATRIZ_FIELDS = [
   { key: "SKU",            label: "SKU / Código de producto",      required: true  },
@@ -158,16 +159,17 @@ const ProcessingErrorModal = ({ messages, onClose }) => (
 const Panel = ({ title, collapsed, setCollapsed, Icon, children }) => {
   return (
     <div
-      className={`relative bg-white p-8 rounded-xl shadow transition-all duration-500 basis-0 overflow-hidden
+      className={`relative bg-white p-8 rounded-xl shadow transition-[flex-grow,width,padding] duration-500 motion-reduce:transition-none basis-0 overflow-hidden
         ${collapsed ? "grow-0 w-16 p-2" : "grow-[3] p-8"}`}
     >
       {!collapsed && (
         <button
           onClick={() => setCollapsed(true)}
-          className="absolute top-2 right-2 text-primary hover:text-green-800 text-xs bg-white border border-primary rounded-full w-6 h-6 flex items-center justify-center shadow z-10"
-          title="Colapsar"
+          className="btn-icono absolute top-2 right-2 z-10"
+          title="Contraer panel"
+          aria-label={`Contraer ${title}`}
         >
-          <span className="text-sm">{"<<"}</span>
+          <SquareChevronLeft size={16} aria-hidden="true" />
         </button>
       )}
       {collapsed && (
@@ -175,10 +177,11 @@ const Panel = ({ title, collapsed, setCollapsed, Icon, children }) => {
           <div className="flex flex-col items-center justify-start gap-2 pointer-events-auto mt-2">
             <button
               onClick={() => setCollapsed(false)}
-              className="text-primary hover:text-green-800 text-xs bg-white border border-primary rounded-full w-6 h-6 flex items-center justify-center shadow"
-              title="Expandir"
+              className="btn-icono"
+              title="Expandir panel"
+              aria-label={`Expandir ${title}`}
             >
-              <span className="text-sm">{">>"}</span>
+              <SquareChevronRight size={16} aria-hidden="true" />
             </button>
             <div className="p-1 rounded-full bg-white shadow">
               <Icon className="w-6 h-6 text-primary" />
@@ -579,11 +582,8 @@ const handleProcesar = async () => {
 
   return (
     <>
-    <div className="p-10 w-full">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold text-neutral-800">Crear Reporte</h1>
-        <p className="text-neutral-600">Carga, selecciona y procesa tus archivos para generar un nuevo reporte.</p>
-      </header>
+    <div className="p-4 w-full">
+      <EncabezadoPagina titulo="Crear Reporte" descripcion="Carga, selecciona y procesa tus archivos para generar un nuevo reporte." />
 
       <div className="flex w-full gap-6 min-h-[calc(100vh-10rem)]">
         <Panel title="1. Cargar Archivos" collapsed={!mostrarCargar} setCollapsed={(v) => setMostrarCargar(!v)} Icon={SquareArrowUp}>
@@ -641,7 +641,7 @@ const handleProcesar = async () => {
         <Panel title="2. Seleccionar Archivos" collapsed={!mostrarSeleccion} setCollapsed={(v) => setMostrarSeleccion(!v)} Icon={ListChecks}>
             <div className="space-y-2">
                 <label className="block font-semibold text-sm">Matriz de Materiales:</label>
-                <select onChange={(e) => handleSelectMatriz(e.target.value)} value={archivoMatrizSeleccionado} className={`w-full bg-gray-100 p-3 text-sm rounded-lg transition-all ${destacarMatriz ? "border-2 border-primary" : ""}`}>
+                <select onChange={(e) => handleSelectMatriz(e.target.value)} value={archivoMatrizSeleccionado} className={`w-full bg-gray-100 p-3 text-sm rounded-lg transition-colors ${destacarMatriz ? "border-2 border-primary" : ""}`}>
                     <option value="">Selecciona un archivo</option>
                     {matrizArchivos.map((file) => <option key={file.id || file.nombre} value={file.nombre}>{file.nombre}</option>)}
                 </select>
@@ -653,7 +653,7 @@ const handleProcesar = async () => {
             </div>
             <div className="space-y-2 mt-4">
                 <label className="block font-semibold text-sm">Registro de Ventas:</label>
-                <select onChange={(e) => handleSelectVentas(e.target.value)} value={archivoVentasSeleccionado} className={`w-full bg-gray-100 p-3 text-sm rounded-lg transition-all ${destacarVentas ? "border-2 border-primary" : ""}`}>
+                <select onChange={(e) => handleSelectVentas(e.target.value)} value={archivoVentasSeleccionado} className={`w-full bg-gray-100 p-3 text-sm rounded-lg transition-colors ${destacarVentas ? "border-2 border-primary" : ""}`}>
                     <option value="">Selecciona un archivo</option>
                     {ventasArchivos.map((file) => <option key={file.id || file.nombre} value={file.nombre}>{file.nombre}{file.periodo ? ` - ${file.periodo}` : ""}</option>)}
                 </select>
@@ -671,7 +671,7 @@ const handleProcesar = async () => {
               <button
                 onClick={handleProcesar}
                 disabled={!archivoMatrizSeleccionado || !archivoVentasSeleccionado || procesando}
-                className={`bg-primary text-white py-3 px-6 rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-all ${
+                className={`bg-primary text-white py-3 px-6 rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors ${
                   procesando ? "opacity-70 cursor-wait" : ""
                 }`}
                 style={{ maxWidth: "280px" }}

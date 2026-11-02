@@ -1,3 +1,84 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Escala global (auditoría UI, UX-08): base de 14 px en vez de 16 px. Como Tailwind usa rem, texto y espacios bajan
+   juntos: la app al 100 % se ve como antes al ~87 % (la persona prefiere cómo se ve al 80 %). text-xs se ajusta en
+   tailwind.config.js para que la letra chica no quede ilegible. */
+@layer base {
+  html {
+    font-size: 87.5%;
+  }
+}
+
+/* Piezas comunes (auditoría UI, VI-02 y VI-06): un solo estilo de botón, pestaña, filtro y campo en toda la app.
+   Colores de marca: primary-dark para texto/fondos con texto blanco (contraste AA), primary para bordes y acentos.
+   Las clases de ubicación (márgenes, anchos) se siguen poniendo en cada elemento. */
+@layer components {
+  .btn-principal,
+  .btn-secundario,
+  .btn-peligro,
+  .btn-peligro-borde {
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 font-medium transition-colors
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark focus-visible:ring-offset-2
+      disabled:cursor-not-allowed;
+  }
+  .btn-principal {
+    @apply bg-primary-dark text-white hover:bg-primary-darker disabled:bg-neutral-300 disabled:text-neutral-600;
+  }
+  .btn-secundario {
+    @apply border border-primary bg-white text-primary-dark hover:bg-primary-light
+      disabled:border-neutral-300 disabled:text-neutral-500 disabled:hover:bg-white;
+  }
+  .btn-peligro {
+    @apply bg-red-600 text-white hover:bg-red-700 disabled:bg-neutral-300 disabled:text-neutral-600;
+  }
+  .btn-peligro-borde {
+    @apply border border-red-300 bg-white text-red-600 hover:bg-red-50 disabled:text-neutral-500;
+  }
+  .btn-chico {
+    @apply px-3 py-1.5 text-sm;
+  }
+
+  /* Pestañas: subrayadas (más limpias que las píldoras). */
+  .pestana {
+    @apply -mb-px border-b-2 border-transparent px-3 py-2 font-medium text-neutral-600 transition-colors hover:text-neutral-900
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark;
+  }
+  .pestana-activa {
+    @apply border-primary-dark text-primary-dark;
+  }
+
+  /* Filtros (categorías): píldoras con borde. */
+  /* Botón de solo ícono para abrir / cerrar menú y paneles (2026-10-30): mismo estilo en toda la app. */
+  .btn-icono {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-md border border-neutral-200 bg-white text-primary-dark
+      shadow-sm transition-colors hover:bg-primary-light focus-visible:outline-none focus-visible:ring-2
+      focus-visible:ring-primary-dark;
+  }
+
+  /* Tarjeta de contenido (VI-09): una sola sombra suave y el mismo redondeo en toda la app. */
+  .tarjeta {
+    @apply rounded-xl bg-white shadow-sm;
+  }
+
+  /* Dato discreto junto al título de la página (p. ej. "Sistema de gestión: ReSimple"). */
+  .chip-etiqueta {
+    @apply inline-block rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-sm text-neutral-600;
+  }
+
+  .chip {
+    @apply rounded-full border border-neutral-300 bg-white px-3 py-1 text-sm font-medium text-neutral-700 transition-colors
+      hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark;
+  }
+  .chip-activo {
+    @apply border-primary bg-primary-light text-primary-dark hover:bg-primary-light;
+  }
+
+  /* Campos de texto y listas: blancos con borde, foco verde. */
+  .campo {
+    @apply rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 placeholder:text-neutral-500
+      focus:border-primary-dark focus:outline-none focus:ring-2 focus:ring-primary-dark/20
+      disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-500;
+  }
+}
