@@ -1,5 +1,6 @@
 // Carga masiva de la Matriz de Materiales — parte B: revisión del contenido del archivo contra los catálogos y la
 // matriz actual. Funciones puras (sin React). Plan: specs/001-matriz-materiales/carga-masiva.md
+import { formatoNumero, aEscala, problemaValor, DECIMALES_CANTIDAD, DECIMALES_PESO } from "./matriz/utilidades.js";
 
 // Minúsculas, sin tildes ni signos: "Descripción del producto" → "descripcion del producto".
 export const normalizar = (s) =>
@@ -16,19 +17,21 @@ export const leerNumero = (v) => {
   return Number.isFinite(n) ? n : null;
 };
 
-const formatoNum = (n) => n.toLocaleString("es-CL", { maximumFractionDigits: 6 });
-// Valor del archivo para los mensajes: decimales de Excel con coma y hasta 6 decimales; textos largos recortados.
+// Pesos muy chicos con todos sus decimales (specs/008-precision-pesos).
+const formatoNum = formatoNumero;
+// Valor del archivo para los mensajes: decimales de Excel (también "1.3E-07") con coma; textos largos recortados.
 const citar = (v) => {
   const t = String(v ?? "").trim();
-  const n = /^-?\d+\.\d+$/.test(t) ? formatoNum(Number(t)) : t;
+  const n = /^-?\d+(\.\d+)?(e-?\d+)?$/i.test(t) && /[.e]/i.test(t) ? formatoNum(Number(t)) : t;
   return `"${n.length > 60 ? `${n.slice(0, 57)}…` : n}"`;
 };
 
 // Busca un nombre en una lista sin distinguir mayúsculas ni tildes; devuelve el elemento o undefined.
 const buscar = (lista, nombre, campo = "nombre") => lista.find((x) => normalizar(x[campo] ?? x) === normalizar(nombre));
 
-// Firma de una fila de composición para comparar (orden de las filas no importa).
-const firmaFila = (f) => [f.componente, formatoNum(f.cantidad), formatoNum(f.pesoKg), f.categoria || "", f.material, f.caracteristica || ""]
+// Firma de una fila de composición para comparar (orden de las filas no importa). Cantidad y peso a la escala de la BD:
+// igual que el back, un valor con más decimales que los que se guardan no cuenta como cambio.
+const firmaFila = (f) => [f.componente, String(aEscala(f.cantidad, DECIMALES_CANTIDAD)), String(aEscala(f.pesoKg, DECIMALES_PESO)), f.categoria || "", f.material, f.caracteristica || ""]
   .map(normalizar).join("|");
 
 /**
@@ -88,12 +91,13 @@ export const revisarCarga = ({ filas, asignacion, crear, niveles = {}, base, gra
 
     const cantidad = leerNumero(v("cantidad"));
     const pesoKg = leerNumero(v("pesoKg"));
-    const numero = (dato, valor, n) => {
+    const numero = (dato, valor, n, tipo) => {
       if (n === null) error(`${dato} ${citar(valor)} no es un número. Escríbelo solo con dígitos y coma o punto decimal (ej.: 0,25).`);
       else if (!(n > 0)) error(`${dato} ${citar(valor)} debe ser mayor que 0.`);
+      else if (problemaValor(n, tipo)) error(`${dato} ${citar(valor)} ${problemaValor(n, tipo)}${tipo === "peso" ? " kg" : ""}.`);
     };
-    if (v("cantidad")) numero("La cantidad", v("cantidad"), cantidad);
-    if (v("pesoKg")) numero("El peso (kg)", v("pesoKg"), pesoKg);
+    if (v("cantidad")) numero("La cantidad", v("cantidad"), cantidad, "cantidad");
+    if (v("pesoKg")) numero("El peso (kg)", v("pesoKg"), pesoKg, "peso");
 
     const categoria = categorias.find((c) => normalizar(c) === normalizar(v("categoria")));
     if (v("categoria") && !categoria) {

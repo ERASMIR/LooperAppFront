@@ -13,6 +13,10 @@ export const MAX_VALOR_CAMPO = 1000;
 // Comparación de nombres sin distinguir mayúsculas ni tildes (igual que la collation de la BD).
 export const mismoNombre = (a, b) => a.trim().localeCompare(b.trim(), "es", { sensitivity: "base" }) === 0;
 
+// Número → texto para un <input type="number">: punto decimal y sin notación científica (8.7e-7 → "0.00000087").
+export const aTextoNumero = (n) =>
+  n === null || n === undefined || n === "" ? "" : Number(n).toLocaleString("en-US", { useGrouping: false, maximumSignificantDigits: 15 });
+
 export const filaVacia = () => ({ componenteId: "", categoria: "", material: "", caracteristicaId: "", cantidad: "", pesoKg: "", campos: {} });
 // Sub Categoría del material (informativa, no se usa en el cálculo): { categoria: { material: subcategoria } }.
 // Viene en el catálogo GRANSIC (hoy solo ReSimple, desde su plantilla oficial).
@@ -45,7 +49,7 @@ export const desdeProducto = (p) => ({
     unidadVentaId: u.unidadVentaId,
     filas: u.filas.map((f) => ({
       componenteId: f.componenteId, categoria: f.categoria || "", material: f.material,
-      caracteristicaId: f.caracteristicaId || "", cantidad: String(f.cantidad), pesoKg: String(f.pesoKg),
+      caracteristicaId: f.caracteristicaId || "", cantidad: aTextoNumero(f.cantidad), pesoKg: aTextoNumero(f.pesoKg),
       campos: Object.fromEntries((f.camposAdicionales || []).map((c) => [c.campoId, c.valor])),
     })),
   })),
@@ -79,8 +83,24 @@ export const pesoFila = (f) => (Number(f.cantidad) || 0) * (Number(f.pesoKg) || 
 export const tonFila = (f) => pesoFila(f) / 1000;
 export const pesoUnidad = (u) => u.filas.reduce((acc, f) => acc + pesoFila(f), 0);
 export const tonUnidad = (u) => pesoUnidad(u) / 1000;
-export const formatoKg = (n) => n.toLocaleString("es-CL", { maximumFractionDigits: 4 });
-export const formatoTon = (n) => n.toLocaleString("es-CL", { minimumFractionDigits: 6, maximumFractionDigits: 6 });
+// Pesos y cantidades con todos sus decimales (componentes muy livianos: 0,0000025 kg → 0,0000000000025 t), sin notación
+// científica y sin el ruido de la coma flotante (15 cifras significativas). specs/008-precision-pesos
+export const formatoNumero = (n) => Number(n || 0).toLocaleString("es-CL", { maximumSignificantDigits: 15 });
+export const formatoKg = formatoNumero;
+export const formatoTon = formatoNumero;
+
+// Misma escala que la BD y el back (looper-materiales/sql/008_precision_pesos.sql, utils/producto.js).
+export const DECIMALES_CANTIDAD = 10;
+export const DECIMALES_PESO = 15;
+export const VALOR_MAXIMO = 1e9;
+export const aEscala = (n, decimales) => Number(Number(n).toFixed(decimales));
+// Problema del valor (ya leído como número) o null: fuera de rango o tan chico que se guardaría como 0.
+export const problemaValor = (n, tipo) => {
+  const decimales = tipo === "peso" ? DECIMALES_PESO : DECIMALES_CANTIDAD;
+  if (n >= VALOR_MAXIMO) return "debe ser menor que 1.000.000.000";
+  if (n > 0 && !(aEscala(n, decimales) > 0)) return `es menor que 0,${"0".repeat(decimales - 1)}1, el mínimo que se puede guardar`;
+  return null;
+};
 export const etiquetaTipo = (tipo) => TIPOS_ADJUNTO.find((t) => t.value === tipo)?.label || tipo;
 
 export const inputCls = "w-full campo";

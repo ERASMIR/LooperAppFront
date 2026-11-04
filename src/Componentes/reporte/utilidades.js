@@ -5,7 +5,8 @@
 export const esReSimple = (gransic) => /resimple/i.test(gransic?.nombre || "");
 
 export const inputCls = "campo";
-export const formatoTon = (n) => (n ? n.toLocaleString("es-CL", { minimumFractionDigits: 2, maximumFractionDigits: 6 }) : "—");
+// 8 decimales: el corte de ReSimple y la precisión con que se guarda el reporte (specs/008-precision-pesos).
+export const formatoTon = (n) => (n ? n.toLocaleString("es-CL", { minimumFractionDigits: 2, maximumFractionDigits: 8 }) : "—");
 export const formatoFechaHora = (f) => new Date(f).toLocaleString("es-CL", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 export const plural = (n, uno, varios) => `${n.toLocaleString("es-CL")} ${n === 1 ? uno : varios}`;
 

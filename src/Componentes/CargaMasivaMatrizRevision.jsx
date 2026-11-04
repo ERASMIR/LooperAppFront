@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { AlertTriangle, Download, ChevronDown, ChevronRight } from "lucide-react";
 import { resumir } from "./cargaMasivaRevision.js";
+import { formatoNumero } from "./matriz/utilidades.js";
 import { FILAS_POR_PAGINA, descargarErrores } from "./cargaMasivaLectura.js";
 import { Paginado } from "./cargaMasivaComun.jsx";
 import { Indicador, Indicadores } from "./Indicador.jsx";
@@ -118,7 +119,7 @@ export const Revision = ({ archivo, revision, productos, conQuitados, decisionDe
                           {r.producto.unidades.map((u) => (
                             <li key={u.unidad}>
                               <b>{u.unidad}:</b>{" "}
-                              {u.filas.map((f) => `${f.componente} (${f.cantidad.toLocaleString("es-CL")} × ${f.pesoKg.toLocaleString("es-CL", { maximumFractionDigits: 6 })} kg)`).join(", ")}
+                              {u.filas.map((f) => `${f.componente} (${formatoNumero(f.cantidad)} × ${formatoNumero(f.pesoKg)} kg)`).join(", ")}
                             </li>
                           ))}
                         </ul>
@@ -176,7 +177,7 @@ export const ComponentesQuitados = ({ conQuitados, decisionDe, onDecidir, onDeci
                   <li key={q.id} className="flex flex-wrap items-center gap-2 py-1.5 text-sm">
                     <span className="flex-1 min-w-[12rem]">
                       {q.unidad} · <b>{q.componente}</b>
-                      <span className="text-neutral-500"> ({q.fila.cantidad.toLocaleString("es-CL")} × {q.fila.pesoKg.toLocaleString("es-CL", { maximumFractionDigits: 6 })} kg, {q.fila.material})</span>
+                      <span className="text-neutral-500"> ({formatoNumero(q.fila.cantidad)} × {formatoNumero(q.fila.pesoKg)} kg, {q.fila.material})</span>
                       {q.unidadCompleta && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-yellow-100 text-yellow-800 text-xs">falta toda la unidad</span>}
                     </span>
                     <BotonDecision activo={d === "conservar"} onClick={() => onDecidir(r, q, "conservar")}>Conservar</BotonDecision>

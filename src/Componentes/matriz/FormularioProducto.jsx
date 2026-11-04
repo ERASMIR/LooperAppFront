@@ -1,7 +1,7 @@
 // Matriz de Materiales: pestaña para crear o editar un producto (separado de Paginas/MatrizMateriales.jsx, auditoría UI RC-05; mismo comportamiento).
 import React, { useState } from "react";
 import CargaMasivaMatriz from "../CargaMasivaMatriz.jsx";
-import { TIPOS_ADJUNTO, EXTENSIONES_ADJUNTO, TAMANO_MAX_MB, MAX_VALOR_CAMPO, filaVacia, subcategoriasDe, formatoFecha, esDeComponente, unidadVacia, productoVacio, pesoFila, tonFila, pesoUnidad, tonUnidad, formatoKg, formatoTon, inputCls, labelCls } from "./utilidades.js";
+import { TIPOS_ADJUNTO, EXTENSIONES_ADJUNTO, TAMANO_MAX_MB, MAX_VALOR_CAMPO, filaVacia, subcategoriasDe, formatoFecha, esDeComponente, unidadVacia, productoVacio, pesoFila, tonFila, pesoUnidad, tonUnidad, formatoKg, formatoTon, problemaValor, aTextoNumero, inputCls, labelCls } from "./utilidades.js";
 import { SelectConMas, ModalConfirmar } from "./modales.jsx";
 import { Plus, X, Trash2, Paperclip, AlertTriangle } from "lucide-react";
 
@@ -53,7 +53,7 @@ export const CrearProducto = ({
           // Al elegir un componente del catálogo se proponen su característica y peso.
           if (campo === "componenteId") {
             const comp = compNuevo || catalogos.componentes.find((c) => c.id === valor);
-            if (comp) Object.assign(nueva, { caracteristicaId: comp.caracteristicaId || "", pesoKg: comp.pesoKg ?? "" });
+            if (comp) Object.assign(nueva, { caracteristicaId: comp.caracteristicaId || "", pesoKg: aTextoNumero(comp.pesoKg) });
           }
           // Si cambia la categoría de la fila (PROREP), el material deja de ser válido.
           if (campo === "categoria") nueva.material = "";
@@ -107,6 +107,10 @@ export const CrearProducto = ({
         if (!(Number(f.cantidad) > 0)) faltan.push("cantidad");
         if (!(Number(f.pesoKg) > 0)) faltan.push("peso");
         if (faltan.length) e.push(`${nombre}, fila ${i + 1}: falta ${faltan.join(", ")}.`);
+        const pc = problemaValor(Number(f.cantidad), "cantidad");
+        const pp = problemaValor(Number(f.pesoKg), "peso");
+        if (pc) e.push(`${nombre}, fila ${i + 1}: la cantidad ${pc}.`);
+        if (pp) e.push(`${nombre}, fila ${i + 1}: el peso ${pp} kg.`);
       });
     });
     if (producto.adjunto && !producto.adjunto.tipo) e.push("Indica el tipo del adjunto.");
