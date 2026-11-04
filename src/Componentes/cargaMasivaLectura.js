@@ -12,9 +12,10 @@ const TAMANO_MAX_MB = 10;
 
 export const inputCls = "w-full campo";
 
-// En la vista previa, los decimales de Excel se muestran con coma y hasta 6 decimales; el dato leído no cambia.
+// En la vista previa, los decimales de Excel (también "1.3E-07") se muestran con coma y todos sus decimales
+// (15 cifras significativas, specs/008-precision-pesos); el dato leído no cambia.
 export const mostrarValor = (v) =>
-  /^-?\d+\.\d+$/.test(v) ? Number(v).toLocaleString("es-CL", { maximumFractionDigits: 6 }) : v;
+  /^-?\d+(\.\d+)?(e-?\d+)?$/i.test(v) && /[.e]/i.test(v) ? Number(v).toLocaleString("es-CL", { maximumSignificantDigits: 15 }) : v;
 
 // Huella del formato: encabezados normalizados y ordenados. Mismo formato = mismos encabezados.
 export const huellaDe = (encabezados) => encabezados.map(normalizar).sort().join("|");

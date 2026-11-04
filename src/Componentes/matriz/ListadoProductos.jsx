@@ -5,7 +5,7 @@ import { useVistaTabla } from "../useVistaTabla.js";
 import Paginacion from "../Paginacion.jsx";
 import { paginar } from "../paginar.js";
 import { Indicador, Indicadores } from "../Indicador.jsx";
-import { ORIGENES, formatoFecha, pesoFila, tonFila, pesoUnidad, tonUnidad, formatoKg, formatoTon, etiquetaTipo } from "./utilidades.js";
+import { ORIGENES, formatoFecha, pesoFila, tonFila, pesoUnidad, tonUnidad, formatoKg, formatoTon, formatoNumero, etiquetaTipo } from "./utilidades.js";
 import { Trash2, Search, Paperclip, ChevronDown, ChevronRight, Pencil, Columns3 } from "lucide-react";
 
 // ── Pestaña: listado de productos ─────────────────────────────────────────────
@@ -199,8 +199,8 @@ export const ListadoProductos = ({
                               {u.filas.map((f) => (
                                 <tr key={f.id} className="border-t">
                                   <td className="p-2">{f.componente}</td>
-                                  <td className="p-2 text-right">{f.cantidad}</td>
-                                  <td className="p-2 text-right">{f.pesoKg}</td>
+                                  <td className="p-2 text-right">{formatoNumero(f.cantidad)}</td>
+                                  <td className="p-2 text-right">{formatoNumero(f.pesoKg)}</td>
                                   <td className="p-2 text-right">{formatoKg(pesoFila(f))}</td>
                                   <td className="p-2 text-right">{formatoTon(tonFila(f))}</td>
                                   {!tienePeligrosidad && <td className="p-2 capitalize">{f.categoria}</td>}
