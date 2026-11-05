@@ -54,9 +54,7 @@ function Layout({ children }) {
           />
         )}
         <main
-          className={`flex-1 flex-shrink-0 overflow-y-auto p-6 transition-[margin] duration-300 motion-reduce:transition-none ${
-            user ? (sidebarCollapsed ? "ml-16" : "ml-64") : "ml-0"
-          }`}
+          className="flex-1 flex-shrink-0 overflow-y-auto p-6"
         >
           {children} {/* El contenido ahora se desplazará correctamente */}
         </main>

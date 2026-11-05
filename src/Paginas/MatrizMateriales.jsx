@@ -349,7 +349,11 @@ const MatrizMateriales = () => {
           onConfirmar={eliminarProducto}
         >
           <p>¿Eliminar el producto <b>{aEliminar.sku}</b> — {aEliminar.descripcion} de la matriz?</p>
-          <p>Dejará de usarse en los cálculos. Sus versiones anteriores se conservan en el historial.</p>
+          <p>
+            Dejará de aparecer en la Matriz y no se podrán cargar ventas nuevas con este SKU. Las ventas ya registradas se
+            siguen calculando con su última versión en los reportes que crees. Sus versiones anteriores se conservan en el
+            historial.
+          </p>
         </ModalConfirmar>
       )}
     </div>
