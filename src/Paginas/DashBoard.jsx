@@ -112,6 +112,24 @@ const SumatoriaPanel = ({ filas, tienePeligrosidad, categorias, filtroCategoria,
   );
 };
 
+// Nombre de material en el eje: hasta 2 líneas de ~32 caracteres; si sobra, termina en "…" (el nombre completo sale en
+// la ayuda al pasar el mouse).
+const partirEtiqueta = (texto, ancho = 32, maxLineas = 2) => {
+  const lineas = [];
+  let actual = "";
+  for (const palabra of String(texto).split(/\s+/)) {
+    if (actual && (actual + " " + palabra).length > ancho) { lineas.push(actual); actual = palabra; }
+    else actual = actual ? actual + " " + palabra : palabra;
+  }
+  if (actual) lineas.push(actual);
+  if (lineas.length <= maxLineas) return lineas;
+  const cortadas = lineas.slice(0, maxLineas);
+  cortadas[maxLineas - 1] = cortadas[maxLineas - 1].slice(0, ancho - 1).trimEnd() + "…";
+  return cortadas;
+};
+
+const ALTO_FILA_GRAFICO = 34; // px por material: con muchos materiales el gráfico crece y el panel hace scroll
+
 const GraficoPanel = ({ filas, tienePeligrosidad }) => {
   const datos = useMemo(() => {
     if (!filas.length) return null;
@@ -135,20 +153,34 @@ const GraficoPanel = ({ filas, tienePeligrosidad }) => {
     // menos píxeles de los que ocupa (borroso). Se dibuja siempre con al menos 2× de densidad.
     devicePixelRatio: Math.max(window.devicePixelRatio || 1, 2),
     plugins: { legend: { position: "top" } },
-    layout: { padding: { top: 10, right: 20, bottom: 30, left: 10 } },
-    // Barras apiladas: una por material, centrada en su nombre (peligrosos sobre no peligrosos). Con barras agrupadas,
-    // la de peligrosos (casi siempre 0) dejaba la verde corrida a un lado.
+    layout: { padding: { top: 4, right: 20, bottom: 4, left: 4 } },
+    // Barras horizontales apiladas (peligrosos a continuación de no peligrosos): los nombres de material, que suelen ser
+    // largos, se leen completos o en 2 líneas en vez de quedar cortados en un eje inclinado.
+    indexAxis: "y",
     scales: {
-      x: { stacked: true, ticks: { autoSkip: false, maxRotation: 70, minRotation: 70, align: "end", font: { size: 11 } } },
-      y: { stacked: true, beginAtZero: true, title: { display: true, text: "Toneladas", font: { size: 13 } } },
+      y: {
+        stacked: true,
+        ticks: {
+          autoSkip: false,
+          font: { size: 11 },
+          callback(valor) { return partirEtiqueta(this.getLabelForValue(valor)); },
+        },
+      },
+      x: { stacked: true, beginAtZero: true, title: { display: true, text: "Toneladas", font: { size: 13 } } },
     },
   };
 
   return (
     <div className="p-4 pt-10 flex flex-col h-full w-full overflow-hidden">
       <h2 className="text-lg font-semibold text-neutral-800 mb-3">Distribución de materiales</h2>
-      <div className="relative flex-1 min-h-0 w-full">
-        {datos ? <Bar data={datos} options={options} /> : <p className="text-neutral-500">No hay datos para mostrar.</p>}
+      <div className="flex-1 min-h-0 w-full overflow-y-auto">
+        {datos ? (
+          <div className="relative w-full" style={{ height: `max(100%, ${filas.length * ALTO_FILA_GRAFICO + 70}px)` }}>
+            <Bar data={datos} options={options} />
+          </div>
+        ) : (
+          <p className="text-neutral-500">No hay datos para mostrar.</p>
+        )}
       </div>
     </div>
   );
