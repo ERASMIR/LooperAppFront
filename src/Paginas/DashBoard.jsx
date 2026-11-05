@@ -64,7 +64,7 @@ const SumatoriaPanel = ({ filas, tienePeligrosidad, categorias, filtroCategoria,
           </button>
         ))}
       </div>
-      <div className="flex-1 border-t border-neutral-200 overflow-y-auto">
+      <div className="flex-1 min-h-0 border-t border-neutral-200 overflow-y-auto">
         <table className="w-full border-collapse text-sm">
           <thead className="bg-neutral-100 text-neutral-700 sticky top-0 z-10">
             <tr>
@@ -120,8 +120,9 @@ const GraficoPanel = ({ filas, tienePeligrosidad }) => {
       ? {
         labels,
         datasets: [
-          { label: "Peligrosos", data: filas.map((f) => f.toneladasPeligroso || 0), backgroundColor: "#f59e0b" },
+          // Orden de apilado: no peligrosos abajo, peligrosos arriba.
           { label: "No peligrosos", data: filas.map((f) => f.toneladasNoPeligroso || 0), backgroundColor: "#00b86b" },
+          { label: "Peligrosos", data: filas.map((f) => f.toneladasPeligroso || 0), backgroundColor: "#f59e0b" },
         ],
       }
       : { labels, datasets: [{ label: "Toneladas", data: filas.map((f) => f.toneladasTotal || 0), backgroundColor: "#00b86b" }] };
@@ -130,18 +131,23 @@ const GraficoPanel = ({ filas, tienePeligrosidad }) => {
   const options = {
     responsive: true,
     maintainAspectRatio: false,
+    // Nitidez: con el zoom del navegador bajo 100 % (p. ej. 80 %) devicePixelRatio queda < 1 y el canvas se dibuja con
+    // menos píxeles de los que ocupa (borroso). Se dibuja siempre con al menos 2× de densidad.
+    devicePixelRatio: Math.max(window.devicePixelRatio || 1, 2),
     plugins: { legend: { position: "top" } },
     layout: { padding: { top: 10, right: 20, bottom: 30, left: 10 } },
+    // Barras apiladas: una por material, centrada en su nombre (peligrosos sobre no peligrosos). Con barras agrupadas,
+    // la de peligrosos (casi siempre 0) dejaba la verde corrida a un lado.
     scales: {
-      x: { ticks: { autoSkip: false, maxRotation: 70, minRotation: 70, align: "end", font: { size: 11 } } },
-      y: { beginAtZero: true, title: { display: true, text: "Toneladas", font: { size: 13 } } },
+      x: { stacked: true, ticks: { autoSkip: false, maxRotation: 70, minRotation: 70, align: "end", font: { size: 11 } } },
+      y: { stacked: true, beginAtZero: true, title: { display: true, text: "Toneladas", font: { size: 13 } } },
     },
   };
 
   return (
     <div className="p-4 pt-10 flex flex-col h-full w-full overflow-hidden">
       <h2 className="text-lg font-semibold text-neutral-800 mb-3">Distribución de materiales</h2>
-      <div className="relative flex-1 w-full min-h-[600px]">
+      <div className="relative flex-1 min-h-0 w-full">
         {datos ? <Bar data={datos} options={options} /> : <p className="text-neutral-500">No hay datos para mostrar.</p>}
       </div>
     </div>
@@ -273,7 +279,9 @@ function Dashboard() {
           No hay reportes vigentes entre {nombreCorto(resumen.desde)} y {nombreCorto(resumen.hasta)}. Créalos en Crear Reporte.
         </p>
       ) : resumen && (
-        <main className="flex flex-1 w-full min-w-full gap-4 overflow-hidden items-stretch">
+        // Alto fijo de la fila: el gráfico ya no se estira al alto de la tabla (con muchos materiales llegaba a ~2.200 px);
+        // la tabla se desplaza dentro de su panel.
+        <main className="flex w-full min-w-full h-[560px] gap-4 overflow-hidden items-stretch">
           <Panel isOpen={isTableOpen} toggle={() => setTableOpen((o) => !o)} style={panelStyle(isTableOpen, 1)} collapsedIcon={<FaTable className="w-7 h-7" />}>
             <SumatoriaPanel {...{ filas, tienePeligrosidad, categorias, filtroCategoria, setFiltroCategoria }} />
           </Panel>
